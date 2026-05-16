@@ -2,6 +2,7 @@ import apiFetch from "./api.js";
 
 /**
  * Extract token from URL params (after Google OAuth redirect) and store it.
+ * This MUST run before any auth guard checks.
  * Returns true if a token was found and stored.
  */
 export function captureTokenFromURL() {
@@ -9,12 +10,14 @@ export function captureTokenFromURL() {
   const token = params.get("token");
 
   if (token) {
+    console.log("[Auth] Token param found in URL, saving to localStorage");
     localStorage.setItem("token", token);
-    // Clean URL without reloading
-    const url = new URL(window.location);
+    // Clean URL without reloading — remove token and gmail params
+    const url = new URL(window.location.href);
     url.searchParams.delete("token");
     url.searchParams.delete("gmail");
-    window.history.replaceState({}, "", url.pathname);
+    window.history.replaceState({}, "", url.pathname + url.search);
+    console.log("[Auth] Token saved, URL cleaned");
     return true;
   }
   return false;
@@ -24,14 +27,24 @@ export function captureTokenFromURL() {
  * Check if a JWT is stored locally.
  */
 export function isAuthenticated() {
-  return Boolean(localStorage.getItem("token"));
+  const hasToken = Boolean(localStorage.getItem("token"));
+  console.log("[Auth] isAuthenticated check:", hasToken);
+  return hasToken;
 }
 
 /**
  * Fetch current user profile from the backend.
  */
 export async function fetchCurrentUser() {
-  return apiFetch("/auth/me");
+  console.log("[Auth] Fetching /api/auth/me");
+  try {
+    const data = await apiFetch("/auth/me");
+    console.log("[Auth] /api/auth/me success:", data.email);
+    return data;
+  } catch (err) {
+    console.error("[Auth] /api/auth/me failed:", err.message);
+    throw err;
+  }
 }
 
 /**
