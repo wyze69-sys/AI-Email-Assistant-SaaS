@@ -135,7 +135,7 @@ function extractBody(payload) {
 
   // Direct body on payload
   if (payload.body && payload.body.data) {
-    return Buffer.from(payload.body.data, "base64url").toString("utf8");
+    return decodeBody(payload.body.data, payload.mimeType);
   }
 
   // Multipart - search parts recursively
@@ -143,13 +143,13 @@ function extractBody(payload) {
     // Prefer plain text
     const plainPart = findPart(payload.parts, "text/plain");
     if (plainPart && plainPart.body && plainPart.body.data) {
-      return Buffer.from(plainPart.body.data, "base64url").toString("utf8");
+      return decodeBody(plainPart.body.data, plainPart.mimeType);
     }
 
     // Fallback to HTML
     const htmlPart = findPart(payload.parts, "text/html");
     if (htmlPart && htmlPart.body && htmlPart.body.data) {
-      return Buffer.from(htmlPart.body.data, "base64url").toString("utf8");
+      return decodeBody(htmlPart.body.data, htmlPart.mimeType);
     }
 
     // Check nested parts
@@ -165,7 +165,42 @@ function extractBody(payload) {
 }
 
 function findPart(parts, mimeType) {
-  return parts.find((p) => p.mimeType === mimeType);
+  for (const part of parts) {
+    if (part.mimeType === mimeType) return part;
+    if (part.parts) {
+      const nested = findPart(part.parts, mimeType);
+      if (nested) return nested;
+    }
+  }
+  return null;
+}
+
+function decodeBody(data, mimeType = "") {
+  const decoded = Buffer.from(data, "base64url").toString("utf8");
+  if (mimeType.toLowerCase() === "text/html") {
+    return htmlToText(decoded);
+  }
+  return decoded.trim();
+}
+
+function htmlToText(html) {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|section|article|li|tr|h[1-6])>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\r/g, "")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 module.exports = { fetchEmails, fetchEmailById };

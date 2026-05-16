@@ -58,14 +58,13 @@ const userSchema = new mongoose.Schema(
 );
 
 // Encrypt tokens before saving
-userSchema.pre("save", function (next) {
+userSchema.pre("save", function () {
   if (this.isModified("gmail.accessToken") && this.gmail.accessToken) {
     this.gmail.accessToken = encrypt(this.gmail.accessToken);
   }
   if (this.isModified("gmail.refreshToken") && this.gmail.refreshToken) {
     this.gmail.refreshToken = encrypt(this.gmail.refreshToken);
   }
-  next();
 });
 
 // Instance method to get decrypted tokens
