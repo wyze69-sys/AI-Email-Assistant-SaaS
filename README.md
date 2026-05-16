@@ -53,7 +53,16 @@ The safety boundary is important: InboxPilot does not automatically send emails.
 - Dashboard summary cards
 - Settings page for Gmail connection status
 
-## Environment Setup
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- MongoDB running locally or a MongoDB Atlas connection string
+- Google Cloud project with OAuth 2.0 credentials (Gmail API enabled, read-only scope)
+- Gemini API key (for AI features)
+
+### Environment Setup
 
 Copy `.env.example` to `.env` and fill in local development values.
 
@@ -62,6 +71,40 @@ cp .env.example .env
 ```
 
 Never commit real API keys, OAuth secrets, JWT secrets, MongoDB credentials, or generated tokens.
+
+### Run the Backend
+
+```bash
+cd inboxpilot/server
+npm install
+node index.js
+```
+
+The backend starts on `http://localhost:5000` by default.
+
+### Run the Frontend
+
+```bash
+cd inboxpilot/client
+npm install
+npm run dev
+```
+
+The frontend starts on `http://localhost:5173` and proxies `/api` requests to the backend.
+
+### Quick Start (both together)
+
+Open two terminals:
+
+```bash
+# Terminal 1 — Backend
+cd inboxpilot/server && npm install && node index.js
+
+# Terminal 2 — Frontend
+cd inboxpilot/client && npm install && npm run dev
+```
+
+Then open `http://localhost:5173` in your browser.
 
 ## Development Notes
 
