@@ -2,14 +2,15 @@ const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+
 const connectDB = require("./config/database");
 const googleAuthRoutes = require("./routes/googleAuthRoutes");
 const emailRoutes = require("./routes/emailRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const authenticate = require("./middleware/auth");
 const { getMe } = require("./controllers/authController");
-
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 const app = express();
 const port = process.env.PORT || 5000;

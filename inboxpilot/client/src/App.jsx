@@ -1,10 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { isAuthenticated } from "./services/auth.js";
+import { captureTokenFromURL, isAuthenticated } from "./services/auth.js";
 import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import EmailDetail from "./pages/EmailDetail.jsx";
 
 function ProtectedRoute({ children }) {
+  captureTokenFromURL();
+
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />;
   }
