@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { captureTokenFromURL, fetchCurrentUser, logout, getGoogleLoginURL } from "../services/auth.js";
+import { fetchCurrentUser, logout, getGoogleLoginURL } from "../services/auth.js";
 import { fetchEmails } from "../services/emails.js";
 import EmailList from "../components/EmailList.jsx";
 
@@ -15,7 +15,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    captureTokenFromURL();
+    // Token capture already handled at module level in App.jsx
     loadUser();
   }, []);
 
