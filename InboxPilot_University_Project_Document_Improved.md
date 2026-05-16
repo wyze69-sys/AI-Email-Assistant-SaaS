@@ -47,7 +47,7 @@
 
 # **Executive Summary**
 
-InboxPilot is a proposed full-stack SaaS web application that helps users manage Gmail messages more efficiently. The system allows users to register, log in, connect Gmail with Google OAuth, view recent emails, summarize selected emails using the Gemini API, extract tasks and deadlines, and generate reply drafts in different tones. The generated reply is not sent automatically. It is shown to the user as a draft so that the user can review, edit, copy, or delete it.
+InboxPilot is a proposed full-stack SaaS web application that helps users manage Gmail messages more efficiently. The system allows users to register, log in, connect Gmail with Google OAuth, view recent emails, summarize selected emails using the Gemini API, extract tasks and deadlines, and generate AI suggested replies in different tones. The generated reply is not sent automatically. It is shown to the user as an AI suggested reply so that the user can review, edit, copy, or delete it.
 
 This project is designed to be realistic for a university full-stack software engineering project. It uses a JavaScript-only technology stack and focuses on a clear minimum viable product. The system demonstrates important software engineering activities, including requirement analysis, system architecture, database design, API design, UML modeling, security planning, testing, and HCI/UI/UX design.
 
@@ -55,7 +55,7 @@ This project is designed to be realistic for a university full-stack software en
 
 Email remains one of the most common communication tools for students, freelancers, small business owners, and job seekers. However, users often receive long and unstructured email messages that require time to read carefully. Important information such as deadlines, meeting details, assignment requirements, client instructions, and payment updates can be hidden inside long paragraphs.
 
-InboxPilot is proposed as an AI-powered email assistant that improves email productivity while keeping the user in control. The application reads Gmail messages only after the user gives permission through Google OAuth. After an email is selected by the user, the application can summarize the message, extract tasks, identify possible deadlines, classify urgency, and generate a reply draft. The application does not send emails automatically because automatic sending could create privacy, trust, and safety risks.
+InboxPilot is proposed as an AI-powered email assistant that improves email productivity while keeping the user in control. The application reads Gmail messages only after the user gives permission through Google OAuth. After an email is selected by the user, the application can summarize the message, extract tasks, identify possible deadlines, classify urgency, and generate an AI suggested reply. The application does not send emails automatically because automatic sending could create privacy, trust, and safety risks.
 
 The project is suitable for a school or university full-stack project because it combines frontend development, backend API development, database modeling, third-party API integration, artificial intelligence integration, authentication, and HCI design. It is also realistic because the MVP is limited to essential features that can be implemented within a semester.
 
@@ -79,7 +79,7 @@ The main problems are:
 
 * Existing email applications are powerful, but beginners may need a simpler AI-assisted workflow.
 
-InboxPilot addresses these problems by providing a focused email assistant that summarizes messages, extracts tasks, and generates reply drafts. The system is intentionally designed as a helper, not as an automatic email agent. Final control remains with the user.
+InboxPilot addresses these problems by providing a focused email assistant that summarizes messages, extracts tasks, and generates AI suggested replies. The system is intentionally designed as a helper, not as an automatic email agent. Final control remains with the user.
 
 # **3\. Objectives**
 
@@ -107,9 +107,9 @@ The specific objectives are:
 
 8. To extract tasks, deadlines, and priorities from email content.
 
-9. To generate reply drafts based on selected tone and user instruction.
+9. To generate AI suggested replies based on selected tone and user instruction.
 
-10. To save summaries, tasks, and draft replies in MongoDB.
+10. To save summaries, tasks, and AI suggested replies in MongoDB.
 
 11. To provide a clean dashboard for email and task management.
 
@@ -145,11 +145,11 @@ The included features are:
 
 * AI task extraction.
 
-* AI reply draft generation.
+* AI suggested reply generation.
 
 * Task management.
 
-* Draft reply management.
+* AI suggested reply management.
 
 * Dashboard summary cards.
 
@@ -201,7 +201,7 @@ Freelancers may receive emails from clients, project managers, or payment servic
 
 ## **5.2 Secondary Users**
 
-Secondary users include small business owners, job seekers, and junior employees. These users may also benefit from summarization, task extraction, and professional reply draft generation.
+Secondary users include small business owners, job seekers, and junior employees. These users may also benefit from summarization, task extraction, and professional AI suggested reply generation.
 
 ## **5.3 User Personas**
 
@@ -209,7 +209,7 @@ Secondary users include small business owners, job seekers, and junior employees
 | :---- | :---- | :---- |
 | University Student | Receives professor emails, assignment instructions, and exam announcements. | Quickly understand email meaning and extract academic deadlines. |
 | Freelancer | Receives client requests, revisions, and project updates. | Convert emails into tasks and create professional responses. |
-| Job Seeker | Receives interview invitations and recruiter messages. | Identify important dates and generate polite reply drafts. |
+| Job Seeker | Receives interview invitations and recruiter messages. | Identify important dates and generate polite AI suggested replies. |
 | Small Business Owner | Receives customer and supplier messages. | Prioritize messages and avoid missing important tasks. |
 
 # **6\. Functional Requirements**
@@ -232,7 +232,7 @@ The system shall:
 
 * Allow a user to log out.
 
-* Protect dashboard, inbox, tasks, drafts, and settings pages.
+* Protect dashboard, inbox, tasks, AI suggested replies, and settings pages.
 
 * Allow a logged-in user to view profile information.
 
@@ -306,7 +306,7 @@ The system shall:
 
 * Allow a user to view, edit, delete, and mark tasks as completed.
 
-## **6.6 AI Reply Draft Module**
+## **6.6 AI Suggested Reply Module**
 
 The system shall:
 
@@ -314,13 +314,13 @@ The system shall:
 
 * Allow a user to write a short instruction for the reply.
 
-* Generate a reply draft using Gemini API.
+* Generate an AI suggested reply using Gemini API.
 
-* Save the generated draft in MongoDB.
+* Save the AI suggested reply in MongoDB.
 
-* Allow the user to copy the draft text.
+* Allow the user to copy the AI suggested reply text.
 
-* Allow the user to delete or regenerate the draft.
+* Allow the user to delete or regenerate the AI suggested reply.
 
 The system shall not send the generated reply automatically.
 
@@ -334,9 +334,9 @@ The system shall display:
 
 * Number of high-priority tasks.
 
-* Number of saved draft replies.
+* Number of saved AI suggested replies.
 
-* Quick links to inbox, tasks, drafts, and settings.
+* Quick links to inbox, tasks, AI suggested replies, and settings.
 
 ## **6.8 Settings Module**
 
@@ -377,18 +377,18 @@ Non-functional requirements describe how well the system should work.
 | Frontend | React.js | Build component-based user interface. |
 | Styling | Tailwind CSS | Create responsive UI quickly with utility classes. |
 | Backend | Node.js \+ Express.js | Create REST API endpoints and backend logic. |
-| Database | MongoDB | Store users, Gmail accounts, emails, tasks, summaries, and drafts. |
+| Database | MongoDB | Store users, Gmail accounts, emails, tasks, summaries, and AI suggested replies. |
 | Authentication | JWT | Protect private API routes after login. |
 | OAuth | Google OAuth 2.0 | Allow the user to grant Gmail read-only permission. |
 | Email API | Gmail API | Fetch recent Gmail messages after permission. |
-| AI API | Gemini API | Summarize emails, extract tasks, and generate reply drafts. |
+| AI API | Gemini API | Summarize emails, extract tasks, and generate AI suggested replies. |
 | Language | JavaScript | Keep frontend and backend in one language for a school project. |
 
 ## **8.2 Reason for Technology Choices**
 
-React.js is selected because it supports reusable components such as EmailCard, TaskCard, DraftCard, Navbar, and Sidebar. Express.js is selected because it provides a simple way to build REST APIs using JavaScript. MongoDB is selected because email content, AI responses, and task data are document-like and can be stored naturally as JSON-style documents. Tailwind CSS is selected because it allows fast UI development with consistent spacing, typography, and responsive design.
+React.js is selected because it supports reusable components such as EmailCard, TaskCard, AISuggestedReplyCard, Navbar, and Sidebar. Express.js is selected because it provides a simple way to build REST APIs using JavaScript. MongoDB is selected because email content, AI responses, and task data are document-like and can be stored naturally as JSON-style documents. Tailwind CSS is selected because it allows fast UI development with consistent spacing, typography, and responsive design.
 
-Google OAuth is required because the application should not ask users for Gmail passwords. Instead, the user grants permission through Google’s authorization process. Gmail API is used only with read-only access. Gemini API is used because the project requires AI features such as summarization, task extraction, and reply draft generation.
+Google OAuth is required because the application should not ask users for Gmail passwords. Instead, the user grants permission through Google’s authorization process. Gmail API is used only with read-only access. Gemini API is used because the project requires AI features such as summarization, task extraction, and AI suggested reply generation.
 
 # **9\. Software Engineering Approach**
 
@@ -421,9 +421,9 @@ This model is suitable for a university project because it is easy to explain in
 | Principle | Application in InboxPilot |
 | :---- | :---- |
 | Separation of concerns | React handles UI, Express handles backend logic, MongoDB stores data, and services handle Gmail/AI integration. |
-| Modularity | The system is divided into authentication, Gmail, email, AI, task, draft, dashboard, and settings modules. |
+| Modularity | The system is divided into authentication, Gmail, email, AI, task, AI suggested reply, dashboard, and settings modules. |
 | Least privilege | The Gmail integration requests only read-only permission. |
-| User control | AI replies are only drafts and are never sent automatically. |
+| User control | AI replies are only suggestions and are never sent automatically. |
 | Reusability | UI components and backend services can be reused across pages and routes. |
 | Maintainability | Controllers, routes, models, middleware, and services are stored in separate folders. |
 | Error handling | API failures should return clear messages to the frontend. |
@@ -440,8 +440,8 @@ This matrix shows how project objectives connect to system features and tests.
 | Read emails | Email management module | Fetch and display 10 recent emails. |
 | Summarize email | AI summary module | Generate summary from selected email body. |
 | Extract tasks | AI task module | Extract task title, priority, and deadline. |
-| Generate reply | AI draft module | Generate draft with selected tone. |
-| Save outputs | MongoDB models | Confirm summary, task, and draft are stored. |
+| Generate reply | AI suggested reply module | Generate AI suggested reply with selected tone. |
+| Save outputs | MongoDB models | Confirm summary, task, and AI suggested reply are stored. |
 | Improve usability | HCI design | User completes main workflow with few errors.  |
 
 ## **9.4 Project Modules**
@@ -453,7 +453,7 @@ This matrix shows how project objectives connect to system features and tests.
 | Email Management Module | Email list, email detail, and email storage. |
 | AI Summary Module | Generate and save email summaries. |
 | Task Extraction Module | Extract, save, and manage tasks. |
-| Draft Reply Module | Generate, save, copy, delete, and regenerate drafts. |
+| AI Suggested Reply Module | Generate, save, copy, delete, and regenerate AI suggested replies. |
 | Dashboard Module | Display overview statistics. |
 | Settings Module | Manage Gmail connection and user preferences. |
 
@@ -467,7 +467,7 @@ inboxpilot/
         Sidebar.jsx  
         EmailCard.jsx  
         TaskCard.jsx  
-        DraftCard.jsx  
+        AISuggestedReplyCard.jsx  
       pages/  
         Login.jsx  
         Register.jsx  
@@ -475,7 +475,7 @@ inboxpilot/
         Inbox.jsx  
         EmailDetail.jsx  
         Tasks.jsx  
-        Drafts.jsx  
+        AISuggestedReplies.jsx  
         Settings.jsx  
       services/  
         api.js  
@@ -488,20 +488,20 @@ inboxpilot/
       emailController.js  
       aiController.js  
       taskController.js  
-      draftController.js  
+      aiSuggestedReplyController.js  
     models/  
       User.js  
       GmailAccount.js  
       Email.js  
       Task.js  
-      DraftReply.js  
+      AISuggestedReply.js  
     routes/  
       authRoutes.js  
       gmailRoutes.js  
       emailRoutes.js  
       aiRoutes.js  
       taskRoutes.js  
-      draftRoutes.js  
+      aiSuggestedReplyRoutes.js  
     middleware/  
       authMiddleware.js  
     services/  
@@ -549,7 +549,7 @@ The general system flow is:
 
 9. The backend sends controlled content to Gemini API.
 
-10. Gemini returns summary, task list, or draft reply.
+10. Gemini returns summary, task list, or AI suggested reply.
 
 11. The backend saves the result in MongoDB.
 
@@ -578,7 +578,7 @@ MongoDB Database
 | :---- | :---- |
 | React Frontend | User interface, page navigation, forms, dashboard, email display, AI result panels. |
 | Express Backend | Authentication, API routes, validation, Gmail API calls, Gemini API calls, database operations. |
-| MongoDB Database | Persistent storage for users, Gmail accounts, emails, summaries, tasks, and drafts. |
+| MongoDB Database | Persistent storage for users, Gmail accounts, emails, summaries, tasks, and AI suggested replies. |
 | Gmail API | Provides recent Gmail messages after the user grants permission. |
 | Gemini API | Processes email text and returns AI-generated results. |
 
@@ -586,7 +586,7 @@ MongoDB Database
 
 ## **11.1 MongoDB Collections**
 
-MongoDB is used because it stores JSON-like documents. This is suitable for email bodies, AI summaries, lists of important points, extracted tasks, and generated drafts.
+MongoDB is used because it stores JSON-like documents. This is suitable for email bodies, AI summaries, lists of important points, extracted tasks, and generated AI suggested replies.
 
 ## **11.2 User Collection**
 
@@ -657,7 +657,7 @@ MongoDB is used because it stores JSON-like documents. This is suitable for emai
   updatedAt: Date  
 }
 
-## **11.7 DraftReply Collection**
+## **11.7 AISuggestedReply Collection**
 
 {  
   \_id: ObjectId,  
@@ -665,7 +665,7 @@ MongoDB is used because it stores JSON-like documents. This is suitable for emai
   emailId: ObjectId,  
   tone: String,  
   instruction: String,  
-  draftText: String,  
+  suggestedReplyText: String,  
   createdAt: Date  
 }
 
@@ -677,7 +677,7 @@ MongoDB is used because it stores JSON-like documents. This is suitable for emai
 | User has many Emails | A user can fetch and store multiple recent emails. |
 | Email has one or many EmailSummaries | A user may regenerate summaries. |
 | Email has many Tasks | One email can contain multiple action items. |
-| Email has many DraftReplies | A user can generate drafts in different tones. |
+| Email has many AISuggestedReplies | A user can generate AI suggested replies in different tones. |
 
 # **12\. API Design**
 
@@ -708,7 +708,7 @@ The backend exposes REST API endpoints. All private routes require a valid JWT t
 | :---- | :---- | :---- |
 | POST | /api/ai/summarize/:emailId | Summarize selected email. |
 | POST | /api/ai/extract-tasks/:emailId | Extract tasks from selected email. |
-| POST | /api/ai/generate-reply/:emailId | Generate reply draft. |
+| POST | /api/ai/generate-reply/:emailId | Generate AI Suggested Reply. |
 
 ## **12.4 Task API Routes**
 
@@ -719,13 +719,13 @@ The backend exposes REST API endpoints. All private routes require a valid JWT t
 | PUT | /api/tasks/:id | Update task status or content. |
 | DELETE | /api/tasks/:id | Delete a task. |
 
-## **12.5 Draft API Routes**
+## **12.5 AI Suggested Reply API Routes**
 
 | Method | Endpoint | Purpose |
 | :---- | :---- | :---- |
-| GET | /api/drafts | Get saved draft replies. |
-| POST | /api/drafts | Save a draft reply. |
-| DELETE | /api/drafts/:id | Delete a draft reply. |
+| GET | /api/suggested-replies | Get saved AI suggested replies. |
+| POST | /api/suggested-replies | Save an AI suggested reply. |
+| DELETE | /api/suggested-replies/:id | Delete an AI suggested reply. |
 
 ## **12.6 Example API Request and Response**
 
@@ -809,7 +809,7 @@ Rules:
 \- Do not add fake details.  
 \- Do not promise something the user did not mention.  
 \- Do not send the email.  
-\- Return only draft text.
+\- Return only AI suggested reply text.
 
 Original email:  
 {{emailBody}}
@@ -822,7 +822,7 @@ This section provides the UML diagrams required for software engineering documen
 
 ### **Easy Explanation**
 
-The use case diagram shows who interacts with the system and what each actor can do. In this project, the main actor is the User. The user can register, log in, connect Gmail, view emails, summarize emails, extract tasks, generate reply drafts, manage tasks, manage drafts, and log out. Google Gmail API and Gemini API are external systems that support the application.
+The use case diagram shows who interacts with the system and what each actor can do. In this project, the main actor is the User. The user can register, log in, connect Gmail, view emails, summarize emails, extract tasks, generate AI suggested replies, manage tasks, manage AI suggested replies, and log out. Google Gmail API and Gemini API are external systems that support the application.
 
 ### **What This Diagram Proves**
 
@@ -834,7 +834,7 @@ This diagram proves that the system has a clear user workflow and that external 
 
 ### **Easy Explanation**
 
-The class diagram shows the main objects of the system and how they are connected. A User can have one GmailAccount and many Emails. Each Email can have summaries, tasks, and draft replies. Service classes such as AuthService, GmailService, and AIService represent backend logic.
+The class diagram shows the main objects of the system and how they are connected. A User can have one GmailAccount and many Emails. Each Email can have summaries, tasks, and AI suggested replies. Service classes such as AuthService, GmailService, and AIService represent backend logic.
 
 ### **What This Diagram Proves**
 
@@ -876,7 +876,7 @@ The activity diagram shows the overall workflow from login to AI result display.
 
 ### **What This Diagram Proves**
 
-This diagram proves that the system has a clear process and decision points. The user can choose between summarizing, extracting tasks, or generating a reply draft.
+This diagram proves that the system has a clear process and decision points. The user can choose between summarizing, extracting tasks, or generating an AI suggested reply.
 
  
 
@@ -888,7 +888,7 @@ The ERD shows how database collections are related. Even though MongoDB is a NoS
 
 ### **What This Diagram Proves**
 
-This diagram proves that the database design supports the main application workflow. It shows how users connect to Gmail accounts, emails, summaries, tasks, and draft replies.
+This diagram proves that the database design supports the main application workflow. It shows how users connect to Gmail accounts, emails, summaries, tasks, and AI suggested replies.
 
 ![][image1] 
 
@@ -903,10 +903,10 @@ The HCI goal of InboxPilot is to make email processing easier, safer, and faster
 | HCI Principle | Application in InboxPilot |
 | :---- | :---- |
 | Simplicity | Each page focuses on one main purpose, such as viewing emails or managing tasks. |
-| Visibility | Important actions such as Summarize, Extract Tasks, Generate Reply, and Copy Draft are clearly visible. |
+| Visibility | Important actions such as Summarize, Extract Tasks, Generate Reply, and Copy AI Suggested Reply are clearly visible. |
 | Feedback | The system shows loading indicators, success messages, and error messages. |
 | Consistency | Buttons, colors, spacing, icons, and page layout remain consistent. |
-| User control | The app never sends email automatically. The user reviews all draft replies. |
+| User control | The app never sends email automatically. The user reviews all AI suggested replies. |
 | Error prevention | The app warns before disconnecting Gmail and blocks empty reply instructions. |
 | Recognition over recall | Users can select actions from visible buttons instead of remembering commands. |
 | Accessibility | Text size, color contrast, labels, and keyboard navigation should be considered. |
@@ -927,7 +927,7 @@ The main navigation includes:
 
 * Tasks
 
-* Drafts
+* AI Suggested Replies
 
 * Settings
 
@@ -947,7 +947,7 @@ The authentication pages should contain simple forms with clear labels. Error me
 
 ### **Dashboard Page**
 
-The dashboard gives a quick overview. It should contain cards for recent emails, pending tasks, high-priority tasks, and saved drafts.
+The dashboard gives a quick overview. It should contain cards for recent emails, pending tasks, high-priority tasks, and saved AI suggested replies.
 
 ### **Inbox Page**
 
@@ -955,15 +955,15 @@ The inbox page shows recent emails. Each email item should display sender, subje
 
 ### **Email Detail Page**
 
-The email detail page is the most important page. It should show the email content and three main AI actions: Summarize Email, Extract Tasks, and Generate Reply Draft. The result should appear in clearly separated panels.
+The email detail page is the most important page. It should show the email content and three main AI actions: Summarize Email, Extract Tasks, and Generate AI Suggested Reply. The result should appear in clearly separated panels.
 
 ### **Tasks Page**
 
 The tasks page shows extracted tasks. Each task should show title, deadline, priority, and status. Users should be able to mark tasks as completed, edit tasks, delete tasks, and filter by priority.
 
-### **Drafts Page**
+### **AI Suggested Replies page**
 
-The drafts page shows generated reply drafts. Users should be able to copy, delete, or regenerate a draft. The tone should be visible so users know why a draft sounds formal, friendly, short, professional, or apologetic.
+The AI Suggested Replies page shows generated AI suggested replies. Users should be able to copy, delete, or regenerate an AI suggested reply. The tone should be visible so users know why an AI suggested reply sounds formal, friendly, short, professional, or apologetic.
 
 ### **Settings Page**
 
@@ -974,14 +974,14 @@ The settings page shows user profile information and Gmail connection status. It
 | Component | Purpose |
 | :---- | :---- |
 | Navbar | Shows application name and user actions. |
-| Sidebar | Provides navigation to dashboard, inbox, tasks, drafts, and settings. |
+| Sidebar | Provides navigation to dashboard, inbox, tasks, AI suggested replies, and settings. |
 | EmailCard | Displays one email preview. |
 | SummaryPanel | Displays AI summary, points, urgency, and category. |
 | TaskCard | Displays one extracted task. |
-| DraftCard | Displays generated reply draft and copy button. |
+| AISuggestedReplyCard | Displays generated AI suggested reply and copy button. |
 | LoadingSpinner | Shows that Gmail or AI processing is in progress. |
 | ErrorAlert | Shows clear error messages. |
-| EmptyState | Explains what to do when no emails, tasks, or drafts exist. |
+| EmptyState | Explains what to do when no emails, tasks, or AI suggested replies exist. |
 
 ## **15.7 Usability Scenarios**
 
@@ -1009,7 +1009,7 @@ The settings page shows user profile information and Gmail connection status. It
 
 4. Freelancer marks tasks as pending and tracks deadlines.
 
-### **Scenario 3: User Generates Reply Draft**
+### **Scenario 3: User Generates AI suggested reply**
 
 1. User opens an email.
 
@@ -1017,9 +1017,9 @@ The settings page shows user profile information and Gmail connection status. It
 
 3. User enters instruction such as “confirm that I received the update”.
 
-4. System generates a draft reply.
+4. System generates an AI suggested reply.
 
-5. User reviews and copies the draft manually.
+5. User reviews and copies the AI suggested reply manually.
 
 ## **15.8 Accessibility Considerations**
 
@@ -1053,9 +1053,9 @@ HCI evaluation can be done using task-based testing. A small group of users can 
 
 5. Extract a task.
 
-6. Generate a reply draft.
+6. Generate an AI suggested reply.
 
-7. Copy the draft.
+7. Copy the AI suggested reply.
 
 8. Mark a task as completed.
 
@@ -1102,7 +1102,7 @@ The backend should send only the selected email content to the Gemini API when t
 | Gmail tokens | Encrypt before saving in MongoDB. |
 | API keys | Store in .env and never expose to frontend. |
 | OAuth scopes | Use read-only Gmail permission. |
-| AI output | Require user review before using draft replies. |
+| AI output | Require user review before using AI suggested replies. |
 | Error messages | Avoid exposing sensitive technical details. |
 
 # **17\. Testing Plan**
@@ -1119,7 +1119,7 @@ The testing strategy includes unit testing, integration testing, API testing, UI
 | Integration Testing | Test multiple modules together. | Test login and protected route access. |
 | API Testing | Test backend endpoints. | Test /api/ai/summarize/:emailId. |
 | UI Testing | Test user interface behavior. | Test clicking Summarize button. |
-| Usability Testing | Test ease of use with users. | Ask student to generate a draft. |
+| Usability Testing | Test ease of use with users. | Ask a student to generate an AI suggested reply. |
 | Security Testing | Test authentication and permission controls. | Access inbox without JWT should fail. |
 
 ## **17.3 Example Test Cases**
@@ -1135,9 +1135,9 @@ The testing strategy includes unit testing, integration testing, API testing, UI
 | TC-07 | Summarize selected email. | Summary panel displays result. |
 | TC-08 | Extract tasks from email with deadline. | Task is created with deadline and priority. |
 | TC-09 | Extract tasks from email without task. | System returns empty task list. |
-| TC-10 | Generate formal reply draft. | Formal draft is displayed and saved. |
+| TC-10 | Generate formal AI suggested reply. | Formal AI suggested reply is displayed and saved. |
 | TC-11 | Submit empty reply instruction. | System shows validation message. |
-| TC-12 | Delete draft. | Draft is removed from drafts page. |
+| TC-12 | Delete AI suggested reply. | AI suggested reply is removed from AI Suggested Replies page. |
 | TC-13 | Disconnect Gmail. | Gmail tokens are removed or invalidated. |
 | TC-14 | Gemini API fails. | User sees clear error message. |
 | TC-15 | Gmail API fails. | User sees clear error message. |
@@ -1170,7 +1170,7 @@ The project has the following limitations:
 
 * The user must review generated replies manually.
 
-* The MVP does not create Gmail drafts inside Gmail.
+* The MVP does not create Gmail draft messages inside Gmail.
 
 * The MVP does not send, archive, delete, or modify emails.
 
@@ -1216,23 +1216,23 @@ This demo flow is designed for a classroom presentation. It shows the most impor
 | :---- | :---- | :---- |
 | 1 | Open landing page. | Introduce InboxPilot and the problem of email overload. |
 | 2 | Register or log in. | Explain JWT authentication and protected pages. |
-| 3 | Open dashboard. | Show overview cards for emails, tasks, and drafts. |
+| 3 | Open dashboard. | Show overview cards for emails, tasks, and AI suggested replies. |
 | 4 | Click Connect Gmail. | Explain Google OAuth and read-only Gmail permission. |
 | 5 | Show recent emails. | Explain that the app fetches only recent Gmail messages. |
 | 6 | Open one email detail page. | Show sender, subject, date, and email body. |
 | 7 | Click Summarize Email. | Show summary, important points, urgency, and category. |
 | 8 | Click Extract Tasks. | Show task title, deadline, priority, and status. |
-| 9 | Generate reply draft. | Select Formal tone and enter a short instruction. |
-| 10 | Copy the draft. | Explain that the system does not auto-send email. |
+| 9 | Generate AI Suggested Reply. | Select Formal tone and enter a short instruction. |
+| 10 | Copy the AI suggested reply. | Explain that the system does not auto-send email. |
 | 11 | Open Tasks page. | Show saved tasks and mark one as completed. |
-| 12 | Open Drafts page. | Show saved draft replies and delete/regenerate option. |
+| 12 | Open AI Suggested Replies page. | Show saved AI suggested replies and delete/regenerate option. |
 | 13 | Open Settings page. | Show Gmail connection status and disconnect option. |
 | 14 | Explain UML diagrams. | Use diagrams to explain actors, classes, workflow, and database. |
 | 15 | Conclude the demo. | Explain limitations and future improvements. |
 
 ## **20.1 Suggested Presentation Script**
 
-InboxPilot is an AI email assistant SaaS designed for students and freelancers. The system reads Gmail messages only after user permission. It helps users summarize long emails, extract tasks, and generate reply drafts. The most important safety decision is that InboxPilot does not send emails automatically. It only creates drafts for manual review.
+InboxPilot is an AI email assistant SaaS designed for students and freelancers. The system reads Gmail messages only after user permission. It helps users summarize long emails, extract tasks, and generate AI suggested replies. The most important safety decision is that InboxPilot does not send emails automatically. It only creates AI suggested replies for manual review.
 
 During the demo, the presenter should emphasize three key points:
 
@@ -1252,14 +1252,14 @@ During the demo, the presenter should emphasize three key points:
 | Phase 4 | Fetch and display recent emails. | Inbox and email detail pages work. |
 | Phase 5 | Integrate Gemini API for summarization. | Summary feature works. |
 | Phase 6 | Add task extraction and task management. | Tasks page works. |
-| Phase 7 | Add reply draft generator and draft management. | Drafts page works. |
+| Phase 7 | Add AI suggested reply generator and AI suggested reply management. | AI Suggested Replies page works. |
 | Phase 8 | Improve dashboard, loading states, errors, and responsive design. | UI feels complete. |
 | Phase 9 | Test main features and fix bugs. | Stable demo-ready project. |
 | Phase 10 | Finalize documentation, UML diagrams, and presentation. | Submission-ready project. |
 
 # **22\. Conclusion**
 
-InboxPilot is a realistic and useful full-stack SaaS project for a university software engineering course. It solves a practical problem by helping users understand emails faster, extract tasks, and prepare professional reply drafts. The system uses a modern JavaScript-only stack with React.js, Node.js, Express.js, MongoDB, Gmail API, Google OAuth, Gemini API, and Tailwind CSS.
+InboxPilot is a realistic and useful full-stack SaaS project for a university software engineering course. It solves a practical problem by helping users understand emails faster, extract tasks, and prepare professional AI suggested replies. The system uses a modern JavaScript-only stack with React.js, Node.js, Express.js, MongoDB, Gmail API, Google OAuth, Gemini API, and Tailwind CSS.
 
 The project is intentionally limited to a safe MVP. It uses read-only Gmail access and does not send emails automatically. This design improves trust, privacy, and user control. From a software engineering perspective, the project demonstrates requirement analysis, modular architecture, database design, API design, UML modeling, HCI planning, security thinking, and testing strategy.
 

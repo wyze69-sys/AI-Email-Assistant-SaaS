@@ -4,11 +4,11 @@ InboxPilot is a full-stack AI Email Assistant SaaS for a university software eng
 
 ## Product Goal
 
-Help users understand and organize Gmail messages faster by summarizing selected emails, extracting tasks and deadlines, and generating reply drafts.
+Help users understand and organize Gmail messages faster by summarizing selected emails, extracting tasks and deadlines, and generating AI suggested replies.
 
 ## Safety Rule
 
-Do not implement automatic email sending. The app may generate a reply draft, but the user must review and manually decide what to do with it.
+Do not implement automatic email sending. The app may generate an AI suggested reply, but the user must review and manually decide what to do with it.
 
 ## Stack
 
@@ -18,7 +18,7 @@ Do not implement automatic email sending. The app may generate a reply draft, bu
 - JWT auth
 - Google OAuth 2.0
 - Gmail API using read-only scope
-- Gemini API for summaries, task extraction, and reply draft generation
+- Gemini API for summaries, task extraction, and AI suggested reply generation
 - JavaScript across the app
 
 ## Folder Ownership
@@ -41,7 +41,7 @@ Do not implement automatic email sending. The app may generate a reply draft, bu
 - Email list
 - Email detail
 - Tasks
-- Draft replies
+- AI suggested replies
 - Settings/profile
 
 ## Expected Backend Areas
@@ -51,7 +51,7 @@ Do not implement automatic email sending. The app may generate a reply draft, bu
 - Gmail read-only email fetching
 - AI summary/task/reply endpoints
 - Task persistence
-- Draft persistence
+- AI suggested reply persistence
 - User profile and Gmail connection status
 
 ## Environment

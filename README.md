@@ -1,8 +1,8 @@
 # InboxPilot: AI Email Assistant SaaS
 
-InboxPilot is a full-stack university SaaS project for helping users manage Gmail messages with AI. Users can register, log in, connect Gmail through Google OAuth, view recent emails, summarize selected messages, extract tasks and deadlines, and generate reply drafts.
+InboxPilot is a full-stack university SaaS project for helping users manage Gmail messages with AI. Users can register, log in, connect Gmail through Google OAuth, view recent emails, summarize selected messages, extract tasks and deadlines, and generate AI suggested replies.
 
-The safety boundary is important: InboxPilot does not automatically send emails. AI replies are shown as drafts so the user can review, edit, copy, or delete them.
+The safety boundary is important: InboxPilot does not automatically send emails. AI replies are shown as AI suggested replies so the user can review, edit, copy, or delete them.
 
 ## Tech Stack
 
@@ -47,9 +47,9 @@ The safety boundary is important: InboxPilot does not automatically send emails.
 - Email detail view
 - AI email summarization
 - AI task, deadline, and priority extraction
-- AI reply draft generation with user-selected tone
+- AI suggested reply generation with user-selected tone
 - Task management
-- Draft reply management
+- AI suggested reply management
 - Dashboard summary cards
 - Settings page for Gmail connection status
 
