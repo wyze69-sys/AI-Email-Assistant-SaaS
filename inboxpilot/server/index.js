@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/database");
 const googleAuthRoutes = require("./routes/googleAuthRoutes");
 const emailRoutes = require("./routes/emailRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 const authenticate = require("./middleware/auth");
 const { getMe } = require("./controllers/authController");
 
@@ -26,6 +27,7 @@ app.use(express.json());
 app.use("/api/auth", googleAuthRoutes);
 app.get("/api/auth/me", authenticate, getMe);
 app.use("/api/emails", emailRoutes);
+app.use("/api/ai", aiRoutes);
 
 app.get("/", (req, res) => {
   res.json({
