@@ -4,6 +4,9 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/database");
 const googleAuthRoutes = require("./routes/googleAuthRoutes");
+const emailRoutes = require("./routes/emailRoutes");
+const authenticate = require("./middleware/auth");
+const { getMe } = require("./controllers/authController");
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
@@ -18,7 +21,11 @@ app.use(
   })
 );
 app.use(express.json());
+
+// Routes
 app.use("/api/auth", googleAuthRoutes);
+app.get("/api/auth/me", authenticate, getMe);
+app.use("/api/emails", emailRoutes);
 
 app.get("/", (req, res) => {
   res.json({
