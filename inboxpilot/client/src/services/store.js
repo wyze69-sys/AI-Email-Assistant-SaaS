@@ -19,6 +19,7 @@
 
 const TASKS_KEY = "inboxpilot:tasks:v1";
 const NOTES_KEY = "inboxpilot:notes:v1";
+const STUDY_PLANNER_KEY = "inboxpilot:study-planner:v1";
 
 const VALID_STATUS = ["todo", "in_progress", "done"];
 const VALID_PRIORITY = ["high", "medium", "low"];
@@ -340,4 +341,176 @@ export function deriveDeadlineGroups(tasks) {
   }
 
   return groups;
+}
+
+/* ------------------------------------------------------------------ */
+/* Study Planner — local-only focus derivation + preference            */
+/* ------------------------------------------------------------------ */
+
+const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
+
+/**
+ * Order active tasks into a prioritized "Today's Focus" list.
+ *
+ * Frontend-only. Reads nothing new — callers pass tasks from `listTasks()`.
+ *
+ * Rules (in order):
+ *   1. Exclude done tasks.
+ *   2. Tasks due today or overdue first.
+ *   3. Then high priority (without a near deadline).
+ *   4. Then due this week.
+ *   5. Then tasks without a date.
+ *   6. Any remaining dated tasks (later) fill the tail.
+ * A task only appears once, in its highest-ranked bucket.
+ *
+ * Returns at most `limit` tasks (default 5). Never throws.
+ */
+export function deriveFocusTasks(tasks, limit = 5) {
+  const list = Array.isArray(tasks) ? tasks : [];
+  const active = list.filter((t) => t && t.status !== "done");
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const msPerDay = 24 * 60 * 60 * 1000;
+
+  const dueToday = [];
+  const highPriority = [];
+  const thisWeek = [];
+  const noDate = [];
+  const later = [];
+
+  for (const task of active) {
+    const due = parseDeadline(task.deadline);
+    const diffDays =
+      due === null
+        ? null
+        : Math.round((due.getTime() - now.getTime()) / msPerDay);
+
+    if (diffDays !== null && diffDays <= 0) {
+      dueToday.push(task);
+    } else if (task.priority === "high") {
+      highPriority.push(task);
+    } else if (diffDays !== null && diffDays <= 7) {
+      thisWeek.push(task);
+    } else if (diffDays === null) {
+      noDate.push(task);
+    } else {
+      later.push(task);
+    }
+  }
+
+  // Within each bucket, sort by soonest deadline then priority for stability.
+  const byUrgency = (a, b) => {
+    const da = parseDeadline(a.deadline);
+    const db = parseDeadline(b.deadline);
+    if (da && db && da.getTime() !== db.getTime()) return da.getTime() - db.getTime();
+    if (da && !db) return -1;
+    if (!da && db) return 1;
+    const pa = PRIORITY_RANK[a.priority] ?? 3;
+    const pb = PRIORITY_RANK[b.priority] ?? 3;
+    return pa - pb;
+  };
+
+  dueToday.sort(byUrgency);
+  highPriority.sort(byUrgency);
+  thisWeek.sort(byUrgency);
+  later.sort(byUrgency);
+
+  const ordered = [
+    ...dueToday,
+    ...highPriority,
+    ...thisWeek,
+    ...noDate,
+    ...later,
+  ];
+
+  const max = Number.isFinite(limit) && limit > 0 ? limit : 5;
+  return ordered.slice(0, max);
+}
+
+const VALID_PLAN_STYLES = ["light", "balanced", "deep"];
+
+/**
+ * Read the saved Study Planner preference. Returns a normalized object,
+ * defaulting to "balanced" when nothing valid is stored. Never throws.
+ */
+export function getStudyPlannerPrefs() {
+  const fallback = { planStyle: "balanced" };
+  if (!storageAvailable()) return fallback;
+  try {
+    const raw = window.localStorage.getItem(STUDY_PLANNER_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    const planStyle = VALID_PLAN_STYLES.includes(parsed?.planStyle)
+      ? parsed.planStyle
+      : "balanced";
+    return { planStyle };
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Persist the Study Planner preference. Validates `planStyle`.
+ * Returns the saved object, or the current value if it couldn't be saved.
+ */
+export function setStudyPlannerPrefs(patch) {
+  const current = getStudyPlannerPrefs();
+  const next = { ...current };
+  if (patch && VALID_PLAN_STYLES.includes(patch.planStyle)) {
+    next.planStyle = patch.planStyle;
+  }
+  if (!storageAvailable()) return next;
+  try {
+    window.localStorage.setItem(STUDY_PLANNER_KEY, JSON.stringify(next));
+  } catch {
+    // Quota/serialization error — keep returning intended value.
+  }
+  return next;
+}
+
+/**
+ * Build a simple, local-only study plan from a list of focus tasks.
+ *
+ * No AI, no network, no real scheduling — just calm suggested blocks sized
+ * by the chosen style. Deep-work blocks are attached to high-priority tasks.
+ *
+ * Returns an array of { id, kind, label, minutes, taskText? }. Never throws.
+ */
+export function buildStudyPlan(focusTasks, planStyle = "balanced") {
+  const tasks = Array.isArray(focusTasks) ? focusTasks : [];
+  if (tasks.length === 0) return [];
+
+  const style = VALID_PLAN_STYLES.includes(planStyle) ? planStyle : "balanced";
+  // How many focus blocks to lay out for this style.
+  const focusBlockCount = style === "light" ? 2 : style === "deep" ? 4 : 3;
+  // Length of a standard focus block.
+  const focusMinutes = style === "deep" ? 50 : 25;
+  const deepMinutes = style === "deep" ? 60 : 45;
+
+  const blocks = [];
+  let counter = 0;
+  const push = (kind, label, minutes, taskText) => {
+    blocks.push({ id: `block-${counter++}`, kind, label, minutes, taskText });
+  };
+
+  for (let i = 0; i < focusBlockCount; i++) {
+    const task = tasks[i];
+    if (!task) break;
+
+    if (task.priority === "high") {
+      push("deep", "Deep work block", deepMinutes, task.text);
+    } else {
+      push("focus", "Focus block", focusMinutes, task.text);
+    }
+
+    // A short break between blocks, but not after the last one.
+    if (i < focusBlockCount - 1 && tasks[i + 1]) {
+      push("break", "Break", 5);
+    }
+  }
+
+  // Close out with a short review block.
+  push("review", "Review block", 10);
+  return blocks;
 }

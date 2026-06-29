@@ -1891,6 +1891,226 @@
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Study planner — calm document panels over real saved tasks          */
+/* ------------------------------------------------------------------ */
+.planner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: var(--reading-width);
+}
+
+.planner-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.1rem 1.25rem 1.2rem;
+}
+
+.planner-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.planner-panel-head h3 {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+
+.planner-panel-note {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: 0.85rem;
+}
+
+/* Plan style selector — quiet paper toggles */
+.planner-style-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.planner-style {
+  flex: 1 1 8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.planner-style:hover:not(.active) {
+  border-color: var(--primary);
+  background: var(--surface-2);
+}
+
+.planner-style.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.planner-style-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.planner-style-hint {
+  font-size: 0.76rem;
+  color: var(--text-faint);
+}
+
+/* Today's focus list */
+.planner-focus-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.planner-focus-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.7rem 0.8rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.planner-focus-rank {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.planner-focus-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.planner-focus-text {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.planner-focus-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.planner-focus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Suggested plan — ruled blocks, no charts */
+.planner-plan {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.planner-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.planner-block-deep {
+  border-left-color: var(--primary);
+}
+
+.planner-block-break {
+  border-left-color: var(--success);
+  background: var(--surface);
+}
+
+.planner-block-review {
+  border-left-color: var(--warn);
+}
+
+.planner-block-time {
+  flex-shrink: 0;
+  min-width: 3.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  padding-top: 1px;
+}
+
+.planner-block-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.planner-block-label {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.planner-block-task {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+/* ~375px refinement */
+@media (max-width: 480px) {
+  .planner-panel {
+    padding: 0.95rem 1rem 1.05rem;
+  }
+
+  .planner-style {
+    flex-basis: 100%;
+  }
+
+  .planner-focus-actions .btn-chip {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+}
+
 /* ==========================================================================
    Text Assistant — paste-and-process page
    Same paper identity: a writing sheet, document result panels, quiet accents.

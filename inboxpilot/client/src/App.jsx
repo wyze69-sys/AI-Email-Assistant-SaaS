@@ -4,6 +4,7 @@ import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import EmailDetail from "./pages/EmailDetail.jsx";
 import TextAssistant from "./pages/TextAssistant.jsx";
+import StudyPlanner from "./pages/StudyPlanner.jsx";
 import Tasks from "./pages/Tasks.jsx";
 import Notes from "./pages/Notes.jsx";
 import Deadlines from "./pages/Deadlines.jsx";
@@ -48,6 +49,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <TextAssistant />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/study-planner"
+          element={
+            <ProtectedRoute>
+              <StudyPlanner />
             </ProtectedRoute>
           }
         />
