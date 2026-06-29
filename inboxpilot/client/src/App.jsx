@@ -3,6 +3,7 @@ import { captureTokenFromURL, isAuthenticated } from "./services/auth.js";
 import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import EmailDetail from "./pages/EmailDetail.jsx";
+import Search from "./pages/Search.jsx";
 import TextAssistant from "./pages/TextAssistant.jsx";
 import StudyPlanner from "./pages/StudyPlanner.jsx";
 import FocusTimer from "./pages/FocusTimer.jsx";
@@ -42,6 +43,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <EmailDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/search"
+          element={
+            <ProtectedRoute>
+              <Search />
             </ProtectedRoute>
           }
         />
