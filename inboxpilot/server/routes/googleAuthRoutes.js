@@ -48,25 +48,21 @@ router.get("/google", (req, res) => {
 
 // Google OAuth callback - exchange code, save user & tokens, issue JWT
 router.get("/google/callback", async (req, res) => {
-  console.log("[OAuth Callback] Reached. Code present:", Boolean(req.query.code));
-
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
   try {
     const { code } = req.query;
 
     if (!code) {
-      console.error("[OAuth Callback] No authorization code in query params");
-      return res.status(400).send("Missing Google authorization code");
+      return res.redirect(`${clientUrl}/login?error=oauth_failed`);
     }
 
     const oauth2Client = createOAuthClient();
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
-    console.log("[OAuth Callback] Google tokens obtained, has refresh:", Boolean(tokens.refresh_token));
 
     // Fetch Gmail profile
     const gmail = google.gmail({ version: "v1", auth: oauth2Client });
     const profile = await gmail.users.getProfile({ userId: "me" });
-    console.log("[OAuth Callback] Gmail profile fetched:", profile.data.emailAddress);
 
     // Fetch Google user info for name/picture
     const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
@@ -75,7 +71,8 @@ router.get("/google/callback", async (req, res) => {
       const infoRes = await oauth2.userinfo.get();
       userInfo = infoRes.data;
     } catch (err) {
-      console.warn("[OAuth Callback] Could not fetch user info:", err.message);
+      // Non-fatal: profile name/picture are optional.
+      console.warn("[OAuth] Could not fetch Google user info");
     }
 
     // Save or update user in MongoDB
@@ -87,11 +84,9 @@ router.get("/google/callback", async (req, res) => {
       },
       tokens
     );
-    console.log("[OAuth Callback] User saved/updated:", user.email, "ID:", user._id);
 
     // Issue JWT for frontend authentication
     if (!process.env.JWT_SECRET) {
-      console.error("[OAuth Callback] JWT_SECRET is not set! Cannot sign token.");
       throw new Error("JWT_SECRET is not configured");
     }
 
@@ -103,16 +98,13 @@ router.get("/google/callback", async (req, res) => {
     const token = jwt.sign(jwtPayload, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES_IN || "7d",
     });
-    console.log("[OAuth Callback] JWT issued, length:", token.length);
 
     // Redirect to frontend with JWT token
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
     const redirectUrl = `${clientUrl}/dashboard?token=${token}&gmail=connected`;
-    console.log("[OAuth Callback] Redirecting to:", clientUrl + "/dashboard?token=<jwt>&gmail=connected");
     res.redirect(redirectUrl);
   } catch (error) {
-    console.error("[OAuth Callback] Error:", error.message);
-    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    // Log a non-sensitive message only — never the code, tokens, or user data.
+    console.error("[OAuth] Callback failed:", error.message);
     res.redirect(`${clientUrl}/login?error=oauth_failed`);
   }
 });

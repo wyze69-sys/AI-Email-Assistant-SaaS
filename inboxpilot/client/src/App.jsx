@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { captureTokenFromURL, isAuthenticated } from "./services/auth.js";
 import Login from "./pages/Login.jsx";
@@ -10,16 +9,10 @@ import EmailDetail from "./pages/EmailDetail.jsx";
  * This guarantees the token is in localStorage before any ProtectedRoute
  * checks isAuthenticated(). Runs exactly once on fresh page load.
  */
-const tokenCaptured = captureTokenFromURL();
-if (tokenCaptured) {
-  console.log("[App] Token captured from URL at module init");
-} else {
-  console.log("[App] No token in URL at module init");
-}
+captureTokenFromURL();
 
 function ProtectedRoute({ children }) {
   if (!isAuthenticated()) {
-    console.log("[App] ProtectedRoute: no token, redirecting to /login");
     return <Navigate to="/login" replace />;
   }
   return children;

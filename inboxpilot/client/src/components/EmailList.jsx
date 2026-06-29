@@ -1,10 +1,72 @@
-export default function EmailList({ emails, loading, onEmailClick }) {
+export default function EmailList({
+  emails,
+  loading,
+  onEmailClick,
+  activeQuery = "",
+  onClearSearch,
+}) {
+  // Initial load — show skeleton placeholders
   if (loading && emails.length === 0) {
-    return <div className="email-list-loading">Fetching emails...</div>;
+    return (
+      <ul className="email-list" aria-busy="true" aria-label="Loading emails">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <li className="email-skeleton" key={i}>
+            <div className="skeleton-line w-30" />
+            <div className="skeleton-line w-60" />
+            <div className="skeleton-line w-90" />
+          </li>
+        ))}
+      </ul>
+    );
   }
 
+  // Empty state with a useful next action
   if (!emails || emails.length === 0) {
-    return <div className="email-list-empty">No emails found.</div>;
+    return (
+      <div className="empty-state">
+        <span className="empty-state-icon" aria-hidden="true">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
+          </svg>
+        </span>
+        {activeQuery ? (
+          <>
+            <h3>No emails match “{activeQuery}”</h3>
+            <p>Try a different search term, or clear the search to see your inbox.</p>
+            {onClearSearch && (
+              <button className="btn-secondary" onClick={onClearSearch}>
+                Clear search
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <h3>Your inbox looks empty</h3>
+            <p>
+              No emails to show right now. New messages will appear here once
+              they arrive in Gmail.
+            </p>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  function handleKeyDown(e, id) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onEmailClick(id);
+    }
   }
 
   return (
@@ -13,14 +75,21 @@ export default function EmailList({ emails, loading, onEmailClick }) {
         <li
           key={email.id}
           className={`email-item ${email.isUnread ? "unread" : ""}`}
+          role="button"
+          tabIndex={0}
+          aria-label={`Open email from ${formatFrom(email.from)}: ${
+            email.subject || "no subject"
+          }${email.isUnread ? " (unread)" : ""}`}
           onClick={() => onEmailClick(email.id)}
+          onKeyDown={(e) => handleKeyDown(e, email.id)}
         >
-          <div className="email-item-header">
-            <span className="email-from">{formatFrom(email.from)}</span>
-            <span className="email-date">{formatDate(email.date)}</span>
-          </div>
-          <div className="email-subject">{email.subject || "(no subject)"}</div>
-          <div className="email-snippet">{email.snippet}</div>
+          <span className="email-unread-dot" aria-hidden="true" />
+          <span className="email-from">{formatFrom(email.from)}</span>
+          <span className="email-date">{formatDate(email.date)}</span>
+          <span className="email-subject">
+            {email.subject || "(no subject)"}
+          </span>
+          <span className="email-snippet">{email.snippet}</span>
         </li>
       ))}
     </ul>
@@ -31,7 +100,7 @@ function formatFrom(from) {
   if (!from) return "Unknown";
   // Extract name or email from "Name <email@example.com>"
   const match = from.match(/^(.+?)\s*<.+>$/);
-  return match ? match[1] : from;
+  return match ? match[1].replace(/^"|"$/g, "") : from;
 }
 
 function formatDate(dateStr) {

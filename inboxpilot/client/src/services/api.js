@@ -21,9 +21,12 @@ async function apiFetch(endpoint, options = {}) {
   });
 
   if (res.status === 401) {
-    // Token expired or invalid — clear and redirect to login
+    // Token expired or invalid — clear it and redirect to login.
+    // Guard against redirect loops if we're already on the login page.
     localStorage.removeItem("token");
-    window.location.href = "/login";
+    if (!window.location.pathname.startsWith("/login")) {
+      window.location.href = "/login";
+    }
     throw new Error("Unauthorized");
   }
 
