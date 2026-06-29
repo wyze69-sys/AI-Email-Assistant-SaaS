@@ -52,7 +52,19 @@
 
   /* Layout */
   --content-width: 960px;
-  --reading-width: 820px;
+  --reading-width: 760px;
+
+  /* Spacing scale — keeps section rhythm consistent */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 2.75rem;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 * {
@@ -73,6 +85,29 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings: tighter tracking, balanced wrapping for cleaner hierarchy */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+  line-height: 1.25;
+}
+
+/* Keep long-form body copy at a comfortable measure for scanning */
+p {
+  text-wrap: pretty;
+}
+
+/* Tabular, aligned figures for dates, counts, and other metadata */
+.tnum,
+.email-date,
+.list-count,
+.task-deadline {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 a {
@@ -96,6 +131,44 @@ button {
   border-radius: 4px;
 }
 
+/* ------------------------------------------------------------------ */
+/* Section entry motion — transform/opacity only, never blocks input  */
+/* ------------------------------------------------------------------ */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.enter {
+  animation: fade-up 0.42s var(--ease-out) both;
+}
+
+.enter-1 {
+  animation: fade-up 0.42s var(--ease-out) both;
+  animation-delay: 0.04s;
+}
+.enter-2 {
+  animation: fade-up 0.42s var(--ease-out) both;
+  animation-delay: 0.09s;
+}
+.enter-3 {
+  animation: fade-up 0.42s var(--ease-out) both;
+  animation-delay: 0.14s;
+}
+
+/* AI result cards, inline loading, and errors ease in as they render */
+.ai-result-section,
+.ai-loading,
+.ai-error {
+  animation: fade-up 0.34s var(--ease-out) both;
+}
+
 /* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -104,5 +177,6 @@ button {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -147,13 +147,13 @@ export default function Dashboard() {
       </header>
 
       <main className="dashboard-main">
-        <div className="dashboard-intro">
+        <div className="dashboard-intro enter-1">
           <h2>Inbox</h2>
           <p>Pick an email to summarize it, extract tasks, or draft a reply.</p>
         </div>
 
         {/* Gmail connection status */}
-        <div className="gmail-status">
+        <div className="gmail-status enter-2">
           {gmailConnected ? (
             <div className="status-connected">
               <span className="status-dot green" />
@@ -172,7 +172,7 @@ export default function Dashboard() {
 
         {/* Disconnected: dedicated empty state with one clear action */}
         {!gmailConnected && (
-          <div className="empty-state connect-state">
+          <div className="empty-state connect-state enter-3">
             <span className="empty-state-icon" aria-hidden="true">
               <svg
                 width="24"
@@ -202,7 +202,7 @@ export default function Dashboard() {
 
         {/* Email section */}
         {gmailConnected && (
-          <section className="emails-section">
+          <section className="emails-section enter-3">
             <form className="search-bar" onSubmit={handleSearch}>
               <div className="search-input-wrap">
                 <svg

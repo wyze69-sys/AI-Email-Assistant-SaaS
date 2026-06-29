@@ -5,19 +5,25 @@ import { isAuthenticated, getGoogleLoginURL } from "../services/auth.js";
 const FEATURES = [
   {
     icon: "✦",
-    title: "Summarize",
-    desc: "Get the key points of a long email in seconds.",
+    title: "Summarize long messages",
+    desc: "Get the key points and tone of an email in seconds.",
   },
   {
     icon: "☑",
-    title: "Extract tasks",
-    desc: "Pull out action items and deadlines automatically.",
+    title: "Extract deadlines and action items",
+    desc: "Pull tasks and due dates out of dense threads.",
   },
   {
     icon: "✉",
-    title: "Suggest replies",
-    desc: "Draft a response you review before sending.",
+    title: "Draft a reply to review",
+    desc: "Get a starting draft you read and edit before sending.",
   },
+];
+
+const TRUST = [
+  "Read-only Gmail access",
+  "No automatic sending",
+  "You review every AI reply",
 ];
 
 export default function Login() {
@@ -30,11 +36,11 @@ export default function Login() {
       return;
     }
 
-    // Show a friendly message if the OAuth round-trip failed.
+    // Show a clear message if the OAuth round-trip failed.
     const params = new URLSearchParams(window.location.search);
     if (params.get("error")) {
       setAuthError(
-        "We couldn't complete Google sign-in. Please try again. If this keeps happening, make sure your Google account has been added as a test user."
+        "Google sign-in didn't complete. Try again. If this keeps happening, make sure your Google account has been added as a test user."
       );
       // Clean the error param from the URL so it doesn't persist on refresh.
       const url = new URL(window.location.href);
@@ -44,17 +50,19 @@ export default function Login() {
   }, [navigate]);
 
   return (
-    <div className="auth-page">
+    <main className="auth-page">
       <div className="auth-container">
-        <section className="auth-hero">
+        <section className="auth-hero enter-1">
           <div className="brand">
             <span className="brand-mark">IP</span>
             InboxPilot
           </div>
-          <h1 className="auth-title">Understand your inbox faster.</h1>
+          <h1 className="auth-title">Review your inbox faster.</h1>
           <p className="auth-subtitle">
-            Connect Gmail, understand emails faster, and draft replies safely.
+            InboxPilot connects to Gmail and helps you understand emails,
+            surface deadlines, and draft replies you stay in control of.
           </p>
+
           <ul className="feature-preview">
             {FEATURES.map((f) => (
               <li className="feature-item" key={f.title}>
@@ -70,7 +78,7 @@ export default function Login() {
           </ul>
         </section>
 
-        <section className="auth-card">
+        <section className="auth-card enter-2" aria-label="Sign in">
           <h2>Sign in</h2>
           <p className="auth-card-sub">
             Use your Google account to connect your Gmail inbox.
@@ -124,10 +132,31 @@ export default function Login() {
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
             <span>
-              Read-only Gmail access. InboxPilot can read your emails to help you,
-              but never sends or deletes anything on your behalf.
+              InboxPilot reads your emails to help you. It never sends, deletes,
+              or changes anything in your account.
             </span>
           </div>
+
+          <ul className="trust-list" aria-label="Privacy and safety">
+            {TRUST.map((item) => (
+              <li key={item}>
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                {item}
+              </li>
+            ))}
+          </ul>
 
           <p className="auth-fineprint">
             By continuing you allow InboxPilot read-only access to your Gmail
@@ -135,6 +164,6 @@ export default function Login() {
           </p>
         </section>
       </div>
-    </div>
+    </main>
   );
 }

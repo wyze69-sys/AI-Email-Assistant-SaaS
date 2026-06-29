@@ -130,7 +130,7 @@ export default function EmailDetail() {
         </button>
       </header>
 
-      <article className="email-content">
+      <article className="email-content enter-1">
         <h2 className="email-detail-subject">
           {email.subject || "(no subject)"}
         </h2>
