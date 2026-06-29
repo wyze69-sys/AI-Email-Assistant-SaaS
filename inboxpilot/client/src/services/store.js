@@ -560,3 +560,236 @@ export function addFocusSession(session) {
     .slice(0, FOCUS_SESSIONS_LIMIT);
   return writeArray(FOCUS_SESSIONS_KEY, next) ? normalized : null;
 }
+
+/* ------------------------------------------------------------------ */
+/* Local Data Manager — summary, backup, import, clear (local-only)    */
+/*                                                                     */
+/* Operates ONLY on the known InboxPilot productivity keys below. It   */
+/* never reads or writes the auth token ("token"), Gmail OAuth tokens, */
+/* the Gemini key, or any other key outside this allow-list.           */
+/* ------------------------------------------------------------------ */
+
+const AI_RESULTS_PREFIX = "inboxpilot:ai-results:v1:";
+
+/**
+ * Remove a single localStorage key. Returns true on success. Never throws.
+ */
+function removeKey(key) {
+  if (!storageAvailable()) return false;
+  try {
+    window.localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * List every saved AI-result key (prefixed with the AI results namespace).
+ * Returns the raw localStorage keys. Callers must NOT surface these to the
+ * UI as-is — they embed email ids. Never throws.
+ */
+function listAiResultKeys() {
+  if (!storageAvailable()) return [];
+  const keys = [];
+  try {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (k && k.startsWith(AI_RESULTS_PREFIX)) keys.push(k);
+    }
+  } catch {
+    return [];
+  }
+  return keys;
+}
+
+/**
+ * Build a privacy-safe summary of locally stored productivity data.
+ * Returns counts only — never raw email ids or stored content. Never throws.
+ *
+ * Shape:
+ *   { tasks, notes, focusSessions, plannerConfigured, plannerStyle, aiResultEntries }
+ */
+export function getLocalDataSummary() {
+  let plannerConfigured = false;
+  try {
+    plannerConfigured =
+      storageAvailable() &&
+      window.localStorage.getItem(STUDY_PLANNER_KEY) != null;
+  } catch {
+    plannerConfigured = false;
+  }
+
+  return {
+    tasks: listTasks().length,
+    notes: listNotes().length,
+    focusSessions: listFocusSessions().length,
+    plannerConfigured,
+    plannerStyle: getStudyPlannerPrefs().planStyle,
+    aiResultEntries: listAiResultKeys().length,
+  };
+}
+
+/**
+ * Build an exportable backup object of local productivity data ONLY.
+ *
+ * Includes: version, exportedAt, tasks, notes, plannerPrefs, focusSessions,
+ * and aiResults (an object keyed by the known AI-result localStorage key).
+ *
+ * Deliberately excludes the JWT, Gmail OAuth tokens, the Gemini key, .env
+ * values, and any key outside the known productivity allow-list. Never throws.
+ */
+export function buildBackup() {
+  const aiResults = {};
+  for (const key of listAiResultKeys()) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (raw == null) continue;
+      aiResults[key] = JSON.parse(raw);
+    } catch {
+      // Skip a single corrupt entry rather than failing the whole export.
+    }
+  }
+
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    tasks: listTasks(),
+    notes: listNotes(),
+    plannerPrefs: getStudyPlannerPrefs(),
+    focusSessions: listFocusSessions(),
+    aiResults,
+  };
+}
+
+/**
+ * Validate and import a parsed backup object.
+ *
+ * Safety rules:
+ *   - Accepts only plain objects with version === 1.
+ *   - Writes ONLY the known productivity keys.
+ *   - AI results are written only for keys that start with the AI prefix;
+ *     all other / unknown keys are ignored.
+ *   - Never imports auth tokens or any key outside the allow-list.
+ *   - Normalizes records through the same shapers used elsewhere.
+ *
+ * Returns { ok, message, imported } and never throws.
+ */
+export function importBackup(parsed) {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return { ok: false, message: "This file isn't a valid InboxPilot backup." };
+  }
+  if (parsed.version !== 1) {
+    return {
+      ok: false,
+      message: "Unsupported backup version. Only version 1 backups can be imported.",
+    };
+  }
+  if (!storageAvailable()) {
+    return { ok: false, message: "Local storage isn't available in this browser." };
+  }
+
+  const imported = {
+    tasks: 0,
+    notes: 0,
+    focusSessions: 0,
+    planner: false,
+    aiResults: 0,
+  };
+
+  try {
+    if (Array.isArray(parsed.tasks)) {
+      const normalized = parsed.tasks.map(normalizeTask);
+      if (writeArray(TASKS_KEY, normalized)) imported.tasks = normalized.length;
+    }
+
+    if (Array.isArray(parsed.notes)) {
+      const normalized = parsed.notes.map(normalizeNote);
+      if (writeArray(NOTES_KEY, normalized)) imported.notes = normalized.length;
+    }
+
+    if (Array.isArray(parsed.focusSessions)) {
+      const normalized = parsed.focusSessions
+        .map(normalizeSession)
+        .sort((a, b) => b.completedAt - a.completedAt)
+        .slice(0, FOCUS_SESSIONS_LIMIT);
+      if (writeArray(FOCUS_SESSIONS_KEY, normalized)) {
+        imported.focusSessions = normalized.length;
+      }
+    }
+
+    if (parsed.plannerPrefs && typeof parsed.plannerPrefs === "object") {
+      setStudyPlannerPrefs({ planStyle: parsed.plannerPrefs.planStyle });
+      imported.planner = true;
+    }
+
+    if (
+      parsed.aiResults &&
+      typeof parsed.aiResults === "object" &&
+      !Array.isArray(parsed.aiResults)
+    ) {
+      for (const key of Object.keys(parsed.aiResults)) {
+        // Ignore any key outside the known AI-results namespace.
+        if (typeof key !== "string" || !key.startsWith(AI_RESULTS_PREFIX)) continue;
+        const value = parsed.aiResults[key];
+        if (!value || typeof value !== "object") continue;
+        try {
+          window.localStorage.setItem(key, JSON.stringify(value));
+          imported.aiResults += 1;
+        } catch {
+          // Skip a single bad entry.
+        }
+      }
+    }
+  } catch {
+    return { ok: false, message: "We couldn't read that backup file." };
+  }
+
+  return { ok: true, message: "Backup imported.", imported };
+}
+
+/* Clear actions — each touches a single known productivity key only. */
+
+export function clearTasks() {
+  return removeKey(TASKS_KEY);
+}
+
+export function clearNotes() {
+  return removeKey(NOTES_KEY);
+}
+
+export function clearFocusSessions() {
+  return removeKey(FOCUS_SESSIONS_KEY);
+}
+
+export function clearPlannerPrefs() {
+  return removeKey(STUDY_PLANNER_KEY);
+}
+
+/**
+ * Remove every saved AI-result entry (all keys under the AI prefix).
+ * Returns true if all removals succeeded. Never throws.
+ */
+export function clearAiResults() {
+  if (!storageAvailable()) return false;
+  let ok = true;
+  for (const key of listAiResultKeys()) {
+    if (!removeKey(key)) ok = false;
+  }
+  return ok;
+}
+
+/**
+ * Clear ALL productivity data at once. Only touches the known productivity
+ * keys — it never removes the auth token or any session/auth key. Never throws.
+ */
+export function clearAllProductivityData() {
+  const results = [
+    clearTasks(),
+    clearNotes(),
+    clearFocusSessions(),
+    clearPlannerPrefs(),
+    clearAiResults(),
+  ];
+  return results.every(Boolean);
+}

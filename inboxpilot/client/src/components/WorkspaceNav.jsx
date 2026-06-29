@@ -14,6 +14,7 @@ const LINKS = [
   { to: "/tasks", label: "Tasks" },
   { to: "/notes", label: "Notes" },
   { to: "/deadlines", label: "Deadlines" },
+  { to: "/settings", label: "Settings" },
 ];
 
 export default function WorkspaceNav() {

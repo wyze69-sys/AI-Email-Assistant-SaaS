@@ -10,6 +10,7 @@ import FocusTimer from "./pages/FocusTimer.jsx";
 import Tasks from "./pages/Tasks.jsx";
 import Notes from "./pages/Notes.jsx";
 import Deadlines from "./pages/Deadlines.jsx";
+import Settings from "./pages/Settings.jsx";
 
 /**
  * Capture token from URL ONCE at module load time, before React renders.
@@ -107,6 +108,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Deadlines />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
             </ProtectedRoute>
           }
         />
