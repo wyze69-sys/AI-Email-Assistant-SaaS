@@ -217,6 +217,69 @@ export function clearAllAiResults(emailId) {
 }
 
 /**
+ * Local cache for the optional AI priority review (per email, browser-only).
+ *
+ * Kept in a SEPARATE namespace from the AI-results history above so the two
+ * features never collide. Stores only the mapped review output plus the
+ * timestamp it was generated — never Gmail tokens, the JWT, or the raw email.
+ *
+ * Key format: inboxpilot:triage-ai:v1:{emailId}
+ * Value shape: { result: { priority, category, reason, suggestedAction }, generatedAt: number }
+ */
+const TRIAGE_REVIEW_PREFIX = "inboxpilot:triage-ai:v1:";
+
+function triageReviewKey(emailId) {
+  return `${TRIAGE_REVIEW_PREFIX}${emailId}`;
+}
+
+/**
+ * Read the cached AI priority review for an email id.
+ * Returns the entry `{ result, generatedAt }` or null when nothing is saved /
+ * on any error. Never throws.
+ */
+export function loadTriageReview(emailId) {
+  if (!emailId || !storageAvailable()) return null;
+  try {
+    const raw = window.localStorage.getItem(triageReviewKey(emailId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    // Corrupt JSON or read error — degrade silently with no cached review.
+    return null;
+  }
+}
+
+/**
+ * Save (or replace) the AI priority review for an email id.
+ * Stores `{ result, generatedAt: Date.now() }`. Returns true on success,
+ * false otherwise. Never throws.
+ */
+export function saveTriageReview(emailId, result) {
+  if (!emailId || !storageAvailable()) return false;
+  try {
+    const entry = { result, generatedAt: Date.now() };
+    window.localStorage.setItem(triageReviewKey(emailId), JSON.stringify(entry));
+    return true;
+  } catch {
+    // Quota exceeded or serialization error — fail quietly.
+    return false;
+  }
+}
+
+/**
+ * Remove the cached AI priority review for an email id. Never throws.
+ */
+export function clearTriageReview(emailId) {
+  if (!emailId || !storageAvailable()) return;
+  try {
+    window.localStorage.removeItem(triageReviewKey(emailId));
+  } catch {
+    // Ignore — nothing else we can safely do here.
+  }
+}
+
+/**
  * Format a stored timestamp into a short, friendly "saved locally" label.
  * Falls back to a plain label if the timestamp is missing or invalid.
  */

@@ -1,7 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchEmailById } from "../services/emails.js";
-import { summarizeEmail, extractTasks, suggestReply } from "../services/ai.js";
+import {
+  summarizeEmail,
+  extractTasks,
+  suggestReply,
+  reviewEmailPriority,
+} from "../services/ai.js";
+import { triageEmail, DISPLAY_LABELS } from "../services/triage.js";
 import {
   friendlyError,
   copyToClipboard,
@@ -12,6 +18,9 @@ import {
   clearAiResult,
   clearAllAiResults,
   savedLocallyLabel,
+  loadTriageReview,
+  saveTriageReview,
+  clearTriageReview,
 } from "../services/ui.js";
 import { addNote, addTasks } from "../services/store.js";
 
@@ -35,6 +44,11 @@ export default function EmailDetail() {
   const [replyLoading, setReplyLoading] = useState(false);
   const [replyError, setReplyError] = useState(null);
 
+  // Optional AI priority review (manually triggered, never auto-fires).
+  const [review, setReview] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState(null);
+
   // Tracks which copy button was last clicked, for transient "Copied" feedback
   const [copied, setCopied] = useState("");
 
@@ -46,6 +60,10 @@ export default function EmailDetail() {
   // noteSaved: boolean, tasksSaved: message string (added count / already saved).
   const [noteSaved, setNoteSaved] = useState(false);
   const [tasksSavedMsg, setTasksSavedMsg] = useState("");
+
+  // Advisory triage labels for the loaded email (pure, frontend-only).
+  // Guarded at the top level so the hook is never called conditionally.
+  const triage = useMemo(() => (email ? triageEmail(email) : null), [email]);
 
   useEffect(() => {
     loadEmail();
@@ -63,6 +81,9 @@ export default function EmailDetail() {
     setReplyError(null);
     setNoteSaved(false);
     setTasksSavedMsg("");
+    // Reset AI priority review state so results never bleed between emails.
+    setReview(null);
+    setReviewError(null);
 
     const saved = loadAiResults(id);
     const restored = {};
@@ -79,6 +100,12 @@ export default function EmailDetail() {
       restored.reply = saved.reply.generatedAt;
     }
     setSavedAt(restored);
+
+    // Restore any cached AI priority review for this email.
+    const cachedReview = loadTriageReview(id);
+    if (cachedReview && cachedReview.result) {
+      setReview(cachedReview.result);
+    }
   }, [id]);
 
   async function loadEmail() {
@@ -143,6 +170,30 @@ export default function EmailDetail() {
     } finally {
       setReplyLoading(false);
     }
+  }
+
+  async function handleReviewPriority() {
+    if (reviewLoading) return;
+    setReviewLoading(true);
+    setReviewError(null);
+    try {
+      const result = await reviewEmailPriority(email);
+      setReview(result);
+      saveTriageReview(id, result);
+    } catch (err) {
+      setReviewError(
+        friendlyError(err, "We couldn't review this email's priority.")
+      );
+    } finally {
+      setReviewLoading(false);
+    }
+  }
+
+  // Clear the cached AI priority review for this email.
+  function handleClearReview() {
+    clearTriageReview(id);
+    setReview(null);
+    setReviewError(null);
   }
 
   function handleClearSaved(tool) {
@@ -260,6 +311,25 @@ export default function EmailDetail() {
         <h2 className="email-detail-subject">
           {email.subject || "(no subject)"}
         </h2>
+
+        {triage && triage.labels.length > 0 && (
+          <div className="triage-detail">
+            <div className="triage-detail-chips">
+              {triage.labels.map((cat) => (
+                <span key={cat} className={`triage-chip triage-${cat}`}>
+                  {DISPLAY_LABELS[cat]}
+                </span>
+              ))}
+            </div>
+            {triage.reasons.length > 0 && (
+              <ul className="triage-reasons">
+                {triage.reasons.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         <div className="email-meta">
           <div className="meta-row">
@@ -579,6 +649,80 @@ export default function EmailDetail() {
             </div>
           </div>
         )}
+
+        {/* AI priority review — separate, manually-triggered subsection */}
+        <div className="ai-review-block">
+          <div className="ai-toolbar">
+            <p className="ai-toolbar-label">AI priority review</p>
+            <div className="ai-actions">
+              <button
+                className="btn-ai"
+                onClick={handleReviewPriority}
+                disabled={reviewLoading}
+              >
+                <span className="btn-ai-icon" aria-hidden="true">
+                  {reviewLoading ? <span className="spinner" /> : "⚖"}
+                </span>
+                <span className="btn-ai-text">
+                  <span className="btn-ai-title">
+                    {reviewLoading ? "Reviewing…" : "Review priority"}
+                  </span>
+                  <span className="btn-ai-desc">Optional AI second opinion</span>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {reviewLoading && (
+            <div className="ai-loading">
+              <span className="spinner" /> Reviewing priority…
+            </div>
+          )}
+
+          {reviewError && !reviewLoading && (
+            <div className="ai-error">
+              <span>{reviewError}</span>
+              <button onClick={handleReviewPriority}>Retry</button>
+            </div>
+          )}
+
+          {review && !reviewLoading && (
+            <div className="ai-result-section">
+              <div className="ai-result-head">
+                <h3>Priority review</h3>
+                <span className="ai-result-badge">AI</span>
+                <span
+                  className={`ai-priority-badge priority-${review.priority}`}
+                >
+                  {review.priority}
+                </span>
+                <div className="ai-result-tools">
+                  <button
+                    className="btn-chip btn-chip-quiet"
+                    onClick={handleClearReview}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              <div className="ai-review-fields">
+                <p>
+                  <strong>Category:</strong> {review.category}
+                </p>
+                <p>
+                  <strong>Reason:</strong> {review.reason}
+                </p>
+                <p>
+                  <strong>Suggested action:</strong> {review.suggestedAction}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <p className="ai-review-disclaimer">
+            AI review is a suggestion. Gmail is not modified.
+          </p>
+        </div>
       </aside>
       </div>
     </div>

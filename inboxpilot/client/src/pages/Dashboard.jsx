@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchCurrentUser, logout, getGoogleLoginURL } from "../services/auth.js";
 import { fetchEmails } from "../services/emails.js";
 import { friendlyError } from "../services/ui.js";
+import { triageEmail, TRIAGE_FILTERS } from "../services/triage.js";
 import EmailList from "../components/EmailList.jsx";
 import WorkspaceNav from "../components/WorkspaceNav.jsx";
 
@@ -29,6 +30,38 @@ export default function Dashboard() {
   const [activeQuery, setActiveQuery] = useState("");
   // null = manual/custom search active, otherwise the active filter chip id.
   const [activeFilter, setActiveFilter] = useState("all");
+  // Client-side triage filter — completely separate from the Gmail-query
+  // FILTERS above. Selecting one never re-queries Gmail (no loadEmails call).
+  const [activeTriageFilter, setActiveTriageFilter] = useState("all");
+
+  // Compute triage once per loaded email; recompute only when `emails` change.
+  const triageMap = useMemo(() => {
+    const map = {};
+    for (const e of emails) map[e.id] = triageEmail(e);
+    return map;
+  }, [emails]);
+
+  // Client-side filtered list (in-memory only, no fetch). "all" returns every
+  // loaded email; any other filter keeps emails whose triage labels include it.
+  const filteredEmails = useMemo(() => {
+    if (activeTriageFilter === "all") return emails;
+    return emails.filter((e) =>
+      triageMap[e.id]?.labels.includes(activeTriageFilter)
+    );
+  }, [emails, triageMap, activeTriageFilter]);
+
+  // Per-filter counts (R5.5): "all" = total loaded; others = matching count.
+  const triageCounts = useMemo(() => {
+    const counts = {};
+    for (const f of TRIAGE_FILTERS) {
+      counts[f.id] =
+        f.id === "all"
+          ? emails.length
+          : emails.filter((e) => triageMap[e.id]?.labels.includes(f.category))
+              .length;
+    }
+    return counts;
+  }, [emails, triageMap]);
 
   useEffect(() => {
     // Token capture already handled at module level in App.jsx
@@ -289,6 +322,39 @@ export default function Dashboard() {
               })}
             </div>
 
+            {/* Triage filters — a completely separate control group from the
+                Gmail-query `.filter-chips` above. Selecting one only updates
+                `activeTriageFilter` and re-derives `filteredEmails` in memory;
+                it never calls loadEmails or touches activeQuery/activeFilter. */}
+            <div
+              className="triage-filter-bar"
+              role="group"
+              aria-label="Triage filters"
+            >
+              <span className="triage-filter-label">Triage</span>
+              {TRIAGE_FILTERS.map((f) => {
+                const isActive = activeTriageFilter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    className={`triage-filter-chip ${isActive ? "active" : ""}`}
+                    aria-pressed={isActive}
+                    onClick={() => setActiveTriageFilter(f.id)}
+                  >
+                    {f.label}
+                    <span className="triage-filter-count">
+                      {triageCounts[f.id]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="inbox-safety-note">
+              Labels are suggestions based on message content. Gmail is not
+              modified.
+            </p>
+
             <div className="list-meta">
               <span className="list-count">
                 {emailsLoading && emails.length === 0
@@ -314,13 +380,21 @@ export default function Dashboard() {
               )}
             </div>
 
-            <EmailList
-              emails={emails}
-              loading={emailsLoading}
-              onEmailClick={handleEmailClick}
-              activeQuery={activeFilter ? "" : activeQuery}
-              onClearSearch={handleClearSearch}
-            />
+            {activeTriageFilter !== "all" &&
+            !emailsLoading &&
+            emails.length > 0 &&
+            filteredEmails.length === 0 ? (
+              <p className="triage-empty">No messages match this filter.</p>
+            ) : (
+              <EmailList
+                emails={filteredEmails}
+                loading={emailsLoading}
+                onEmailClick={handleEmailClick}
+                activeQuery={activeFilter ? "" : activeQuery}
+                onClearSearch={handleClearSearch}
+                triageMap={triageMap}
+              />
+            )}
 
             {nextPageToken && (
               <button

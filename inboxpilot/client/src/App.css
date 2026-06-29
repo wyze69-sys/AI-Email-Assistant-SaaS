@@ -3791,3 +3791,226 @@
     white-space: normal;
   }
 }
+
+/* ==========================================================================
+   Inbox Triage — subtle suggestion chips, separate filter bar, AI review
+   Calm/paper identity: no loud warning fills, reuse existing tokens.
+   Labels are suggestions only; Gmail is never modified.
+   ========================================================================== */
+
+/* Row chips — full-width line beneath the snippet inside the .email-item grid */
+.triage-chips {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+/* Base chip — mirrors the calm .label-tag pill */
+.triage-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+/* Actionable categories — a quiet primary-tinted border/text, very subtle */
+.triage-important,
+.triage-needs_reply {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  color: var(--primary);
+}
+
+/* Passive categories stay neutral gray (inherit base .triage-chip) */
+.triage-newsletter,
+.triage-promotion,
+.triage-notification,
+.triage-low_priority,
+.triage-receipt,
+.triage-has_task {
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+/* possible_spam — visible but CALM: muted amber, never a filled red */
+.triage-possible_spam {
+  border-color: var(--warn-border);
+  color: var(--warn);
+  background: var(--surface-2);
+}
+
+/* --------------------------------------------------------------------- */
+/* Triage filter bar — visually separate from the Gmail .filter-chips     */
+/* --------------------------------------------------------------------- */
+.triage-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+
+.triage-filter-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-faint);
+  margin-right: 0.2rem;
+}
+
+/* Lighter than the Gmail .filter-chip; soft fill when active */
+.triage-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 4px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.triage-filter-chip:hover:not(.active) {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--surface-2);
+}
+
+.triage-filter-chip.active {
+  background: var(--primary-soft);
+  border-color: var(--primary-border);
+  color: var(--primary);
+}
+
+.triage-filter-chip:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.triage-filter-count {
+  margin-left: 0.1rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.triage-filter-chip.active .triage-filter-count {
+  color: var(--primary);
+}
+
+/* Quiet empty state for a filter with no matches */
+.triage-empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-faint);
+}
+
+/* --------------------------------------------------------------------- */
+/* Email Detail — triage labels + reasons panel near the top              */
+/* --------------------------------------------------------------------- */
+.triage-detail {
+  margin: 0.4rem 0 1rem;
+}
+
+.triage-detail-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.triage-reasons {
+  margin: 0.55rem 0 0;
+  padding-left: 1.1rem;
+  list-style: disc;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.triage-reasons li {
+  margin: 0.1rem 0;
+}
+
+/* --------------------------------------------------------------------- */
+/* AI priority review block — subtle separation, calm priority badge      */
+/* --------------------------------------------------------------------- */
+.ai-review-block {
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--border);
+}
+
+.ai-review-fields {
+  margin-top: 0.7rem;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.ai-review-fields p {
+  margin: 0.3rem 0;
+}
+
+.ai-review-fields strong {
+  color: var(--text);
+}
+
+.ai-review-disclaimer {
+  margin-top: 0.8rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
+/* Calm priority badge — scoped so it never inherits the alarming red badge */
+.ai-priority-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 2px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+}
+
+/* high = subtle warm/amber tint (never solid red) */
+.ai-priority-badge.priority-high {
+  border-color: var(--warn-border);
+  color: var(--warn);
+  background: var(--surface-2);
+}
+
+/* medium = neutral gray */
+.ai-priority-badge.priority-medium {
+  border-color: var(--border-strong);
+  color: var(--text-secondary);
+  background: var(--surface-2);
+}
+
+/* low = quiet/faint */
+.ai-priority-badge.priority-low {
+  border-color: var(--border);
+  color: var(--text-faint);
+  background: var(--surface-2);
+}

@@ -1,9 +1,12 @@
+import { DISPLAY_LABELS } from "../services/triage.js";
+
 export default function EmailList({
   emails,
   loading,
   onEmailClick,
   activeQuery = "",
   onClearSearch,
+  triageMap = {},
 }) {
   // Initial load — show skeleton placeholders
   if (loading && emails.length === 0) {
@@ -71,27 +74,39 @@ export default function EmailList({
 
   return (
     <ul className="email-list">
-      {emails.map((email) => (
-        <li
-          key={email.id}
-          className={`email-item ${email.isUnread ? "unread" : ""}`}
-          role="button"
-          tabIndex={0}
-          aria-label={`Open email from ${formatFrom(email.from)}: ${
-            email.subject || "no subject"
-          }${email.isUnread ? " (unread)" : ""}`}
-          onClick={() => onEmailClick(email.id)}
-          onKeyDown={(e) => handleKeyDown(e, email.id)}
-        >
-          <span className="email-unread-dot" aria-hidden="true" />
-          <span className="email-from">{formatFrom(email.from)}</span>
-          <span className="email-date">{formatDate(email.date)}</span>
-          <span className="email-subject">
-            {email.subject || "(no subject)"}
-          </span>
-          <span className="email-snippet">{email.snippet}</span>
-        </li>
-      ))}
+      {emails.map((email) => {
+        const triage = triageMap[email.id];
+        return (
+          <li
+            key={email.id}
+            className={`email-item ${email.isUnread ? "unread" : ""}`}
+            role="button"
+            tabIndex={0}
+            aria-label={`Open email from ${formatFrom(email.from)}: ${
+              email.subject || "no subject"
+            }${email.isUnread ? " (unread)" : ""}`}
+            onClick={() => onEmailClick(email.id)}
+            onKeyDown={(e) => handleKeyDown(e, email.id)}
+          >
+            <span className="email-unread-dot" aria-hidden="true" />
+            <span className="email-from">{formatFrom(email.from)}</span>
+            <span className="email-date">{formatDate(email.date)}</span>
+            <span className="email-subject">
+              {email.subject || "(no subject)"}
+            </span>
+            <span className="email-snippet">{email.snippet}</span>
+            {triage && triage.labels.length > 0 && (
+              <span className="triage-chips" aria-label="Triage labels">
+                {triage.labels.map((cat) => (
+                  <span key={cat} className={`triage-chip triage-${cat}`}>
+                    {DISPLAY_LABELS[cat]}
+                  </span>
+                ))}
+              </span>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }
