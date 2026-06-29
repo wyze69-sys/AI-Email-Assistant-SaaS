@@ -22,9 +22,12 @@ const TASKS_KEY = "inboxpilot:tasks:v1";
 const NOTES_KEY = "inboxpilot:notes:v1";
 const STUDY_PLANNER_KEY = "inboxpilot:study-planner:v1";
 const RESOURCES_KEY = "inboxpilot:resources:v1";
+const CAPTURE_KEY = "inboxpilot:capture:v1";
 
 const VALID_STATUS = ["todo", "in_progress", "done"];
 const VALID_PRIORITY = ["high", "medium", "low"];
+const VALID_CAPTURE_TYPES = ["idea", "reminder", "task", "note", "link", "general"];
+const VALID_CONVERTED_TO = ["task", "note", "resource"];
 
 /**
  * True when localStorage can actually be read/written in this context.
@@ -92,7 +95,10 @@ function makeId() {
 
 function normalizeSource(source) {
   if (!source || typeof source !== "object") return null;
-  const type = source.type === "email" || source.type === "text" ? source.type : null;
+  const type =
+    source.type === "email" || source.type === "text" || source.type === "capture"
+      ? source.type
+      : null;
   if (!type) return null;
   const out = { type };
   // Only persist an id — never tokens or bodies.
@@ -427,6 +433,87 @@ export function removeResource(id) {
   const next = all.filter((r) => r.id !== String(id));
   if (next.length === all.length) return false;
   return writeArray(RESOURCES_KEY, next);
+}
+
+/* ------------------------------------------------------------------ */
+/* Quick Capture API (local-only inbox of ideas / reminders / links)   */
+/*                                                                     */
+/* A fast scratch space. Items can later be converted into a task,     */
+/* note, or resource via the existing stores. Frontend-only, guarded.  */
+/* ------------------------------------------------------------------ */
+
+function normalizeCapture(input) {
+  const now = Date.now();
+  const type = VALID_CAPTURE_TYPES.includes(input?.type) ? input.type : "general";
+  const convertedTo = VALID_CONVERTED_TO.includes(input?.convertedTo)
+    ? input.convertedTo
+    : null;
+  return {
+    id: input?.id ? String(input.id) : makeId(),
+    text: typeof input?.text === "string" ? input.text : "",
+    type,
+    convertedTo,
+    createdAt: typeof input?.createdAt === "number" ? input.createdAt : now,
+    updatedAt: typeof input?.updatedAt === "number" ? input.updatedAt : now,
+  };
+}
+
+/**
+ * Return all saved capture items. Callers can sort. Never throws.
+ */
+export function listCaptures() {
+  return readArray(CAPTURE_KEY).map(normalizeCapture);
+}
+
+/**
+ * Add a capture item. Requires non-blank text (trimmed). Returns the stored
+ * capture, or null if the text is blank or it couldn't be saved. Never throws.
+ */
+export function addCapture(capture) {
+  const normalized = normalizeCapture(capture);
+  normalized.text = normalized.text.trim();
+  if (!normalized.text) return null;
+  const all = listCaptures();
+  all.push(normalized);
+  return writeArray(CAPTURE_KEY, all) ? normalized : null;
+}
+
+/**
+ * Patch a capture by id. Validates `type` and `convertedTo`; invalid values
+ * are ignored. Returns the updated capture or null if not found/failed.
+ */
+export function updateCapture(id, patch) {
+  if (!id || !patch || typeof patch !== "object") return null;
+  const all = listCaptures();
+  const idx = all.findIndex((c) => c.id === String(id));
+  if (idx === -1) return null;
+
+  const next = { ...all[idx] };
+  if (typeof patch.text === "string") {
+    const t = patch.text.trim();
+    if (t) next.text = t;
+  }
+  if (patch.type && VALID_CAPTURE_TYPES.includes(patch.type)) next.type = patch.type;
+  if ("convertedTo" in patch) {
+    next.convertedTo = VALID_CONVERTED_TO.includes(patch.convertedTo)
+      ? patch.convertedTo
+      : null;
+  }
+  next.updatedAt = Date.now();
+
+  all[idx] = next;
+  return writeArray(CAPTURE_KEY, all) ? next : null;
+}
+
+/**
+ * Remove a capture by id. Returns true if one was removed and persisted.
+ */
+export function removeCapture(id) {
+  if (!id) return false;
+  const all = listCaptures();
+  const next = all.filter((c) => c.id !== String(id));
+  if (next.length === all.length) return false;
+  return writeArray(CAPTURE_KEY, next);
 }
 
 /* ------------------------------------------------------------------ */
@@ -795,6 +882,7 @@ export function getLocalDataSummary() {
     tasks: listTasks().length,
     notes: listNotes().length,
     resources: listResources().length,
+    captures: listCaptures().length,
     focusSessions: listFocusSessions().length,
     plannerConfigured,
     plannerStyle: getStudyPlannerPrefs().planStyle,
@@ -829,6 +917,7 @@ export function buildBackup() {
     tasks: listTasks(),
     notes: listNotes(),
     resources: listResources(),
+    captures: listCaptures(),
     plannerPrefs: getStudyPlannerPrefs(),
     focusSessions: listFocusSessions(),
     aiResults,
@@ -866,6 +955,7 @@ export function importBackup(parsed) {
     tasks: 0,
     notes: 0,
     resources: 0,
+    captures: 0,
     focusSessions: 0,
     planner: false,
     aiResults: 0,
@@ -888,6 +978,15 @@ export function importBackup(parsed) {
         .filter((r) => r.title);
       if (writeArray(RESOURCES_KEY, normalized)) {
         imported.resources = normalized.length;
+      }
+    }
+
+    if (Array.isArray(parsed.captures)) {
+      const normalized = parsed.captures
+        .map(normalizeCapture)
+        .filter((c) => c.text.trim());
+      if (writeArray(CAPTURE_KEY, normalized)) {
+        imported.captures = normalized.length;
       }
     }
 
@@ -945,6 +1044,10 @@ export function clearResources() {
   return removeKey(RESOURCES_KEY);
 }
 
+export function clearCaptures() {
+  return removeKey(CAPTURE_KEY);
+}
+
 export function clearFocusSessions() {
   return removeKey(FOCUS_SESSIONS_KEY);
 }
@@ -975,6 +1078,7 @@ export function clearAllProductivityData() {
     clearTasks(),
     clearNotes(),
     clearResources(),
+    clearCaptures(),
     clearFocusSessions(),
     clearPlannerPrefs(),
     clearAiResults(),

@@ -7,6 +7,7 @@ import {
   clearTasks,
   clearNotes,
   clearResources,
+  clearCaptures,
   clearFocusSessions,
   clearPlannerPrefs,
   clearAiResults,
@@ -87,7 +88,7 @@ export default function Settings() {
         const i = result.imported;
         announce(
           "ok",
-          `Backup restored — ${i.tasks} tasks, ${i.notes} notes, ${i.resources} resources, ${i.focusSessions} focus sessions, ${i.aiResults} saved AI entries.`
+          `Backup restored — ${i.tasks} tasks, ${i.notes} notes, ${i.resources} resources, ${i.captures} captures, ${i.focusSessions} focus sessions, ${i.aiResults} saved AI entries.`
         );
         refresh();
       } else {
@@ -143,6 +144,10 @@ export default function Settings() {
               <dd>{summary.resources}</dd>
             </div>
             <div className="settings-summary-item">
+              <dt>Captures</dt>
+              <dd>{summary.captures}</dd>
+            </div>
+            <div className="settings-summary-item">
               <dt>Focus sessions</dt>
               <dd>{summary.focusSessions}</dd>
             </div>
@@ -176,9 +181,9 @@ export default function Settings() {
         <section className="settings-card" aria-labelledby="settings-backup-h">
           <h3 id="settings-backup-h">Backup</h3>
           <p className="settings-card-note">
-            Backups include tasks, notes, resources, planner preference, focus
-            sessions, and saved AI results. They never include your login or
-            email access.
+            Backups include tasks, notes, resources, captures, planner
+            preference, focus sessions, and saved AI results. They never include
+            your login or email access.
           </p>
           <div className="settings-actions">
             <button className="btn-secondary" onClick={handleExport}>
@@ -245,6 +250,18 @@ export default function Settings() {
               className="btn-quiet-danger"
               onClick={() =>
                 confirmClear(
+                  "Clear all captures from this browser? This can't be undone.",
+                  clearCaptures,
+                  "Captures cleared."
+                )
+              }
+            >
+              Clear captures
+            </button>
+            <button
+              className="btn-quiet-danger"
+              onClick={() =>
+                confirmClear(
                   "Clear all focus sessions from this browser? This can't be undone.",
                   clearFocusSessions,
                   "Focus sessions cleared."
@@ -284,7 +301,7 @@ export default function Settings() {
               className="btn-quiet-danger btn-quiet-danger-strong"
               onClick={() =>
                 confirmClear(
-                  "Clear ALL productivity data (tasks, notes, resources, focus sessions, planner preference, and saved AI results) from this browser? You'll stay logged in. This can't be undone.",
+                  "Clear ALL productivity data (tasks, notes, resources, captures, focus sessions, planner preference, and saved AI results) from this browser? You'll stay logged in. This can't be undone.",
                   clearAllProductivityData,
                   "All productivity data cleared. You're still logged in."
                 )
