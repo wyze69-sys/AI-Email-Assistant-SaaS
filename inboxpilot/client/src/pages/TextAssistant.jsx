@@ -168,10 +168,11 @@ export default function TextAssistant() {
       <WorkspaceNav />
 
       <header className="text-assistant-header">
-        <h1>Text Assistant</h1>
+        <h1>Message Assistant</h1>
         <p className="text-assistant-subtitle">
-          Paste a message, class announcement, or assignment instruction. Turn
-          it into a summary, tasks, or a reply draft.
+          Paste an email, message, announcement, meeting note, or document
+          text. Turn it into a summary, tasks, simplified notes, or a reply
+          draft.
         </p>
       </header>
 
@@ -180,7 +181,7 @@ export default function TextAssistant() {
           className="text-assistant-sheet"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Paste an email, message, announcement, or assignment instructions here..."
+          placeholder="Paste an email, message, announcement, meeting note, or document text here..."
           rows={12}
           aria-label="Text to process"
         />

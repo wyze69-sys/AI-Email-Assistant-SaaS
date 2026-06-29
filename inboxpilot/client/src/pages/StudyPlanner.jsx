@@ -59,7 +59,7 @@ export default function StudyPlanner() {
 
   return (
     <WorkspaceShell
-      title="Study planner"
+      title="Daily Planner"
       subtitle="Turn your saved tasks into a calm plan for what to work on today."
     >
       {isEmpty ? (
@@ -174,7 +174,7 @@ export default function StudyPlanner() {
           {/* Suggested study plan */}
           <section className="planner-panel">
             <div className="planner-panel-head">
-              <h3>Suggested plan</h3>
+              <h3>Daily Focus Plan</h3>
               <span className="board-count">{totalMinutes} min</span>
             </div>
             <p className="planner-panel-note">

@@ -514,3 +514,49 @@ export function buildStudyPlan(focusTasks, planStyle = "balanced") {
   push("review", "Review block", 10);
   return blocks;
 }
+
+/* ------------------------------------------------------------------ */
+/* Focus Timer — completed session log (local-only)                    */
+/* ------------------------------------------------------------------ */
+
+const FOCUS_SESSIONS_KEY = "inboxpilot:focus-sessions:v1";
+const FOCUS_SESSIONS_LIMIT = 20;
+const VALID_FOCUS_MODES = ["focus", "short_break", "deep"];
+
+function normalizeSession(input) {
+  const now = Date.now();
+  const minutes =
+    typeof input?.minutes === "number" && input.minutes > 0
+      ? Math.round(input.minutes)
+      : 0;
+  return {
+    id: input?.id ? String(input.id) : makeId(),
+    taskId: input?.taskId != null ? String(input.taskId) : "",
+    taskText: typeof input?.taskText === "string" ? input.taskText : "",
+    minutes,
+    mode: VALID_FOCUS_MODES.includes(input?.mode) ? input.mode : "focus",
+    completedAt: typeof input?.completedAt === "number" ? input.completedAt : now,
+  };
+}
+
+/**
+ * Return completed focus sessions, newest first. Never throws.
+ */
+export function listFocusSessions() {
+  const sessions = readArray(FOCUS_SESSIONS_KEY).map(normalizeSession);
+  return sessions.sort((a, b) => b.completedAt - a.completedAt);
+}
+
+/**
+ * Append a completed focus session. Keeps only the latest
+ * FOCUS_SESSIONS_LIMIT (20) entries to avoid unbounded localStorage growth.
+ * Returns the stored session, or null if it couldn't be saved.
+ */
+export function addFocusSession(session) {
+  const normalized = normalizeSession(session);
+  const existing = readArray(FOCUS_SESSIONS_KEY).map(normalizeSession);
+  const next = [normalized, ...existing]
+    .sort((a, b) => b.completedAt - a.completedAt)
+    .slice(0, FOCUS_SESSIONS_LIMIT);
+  return writeArray(FOCUS_SESSIONS_KEY, next) ? normalized : null;
+}

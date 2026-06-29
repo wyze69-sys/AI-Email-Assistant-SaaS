@@ -2355,3 +2355,314 @@
     flex: 1 1 calc(50% - 0.25rem);
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Focus timer — calm paper panels, one large readable clock           */
+/* ------------------------------------------------------------------ */
+.focus {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: var(--reading-width);
+}
+
+.focus-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.1rem 1.25rem 1.2rem;
+}
+
+.focus-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.focus-panel-head h3 {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+
+/* Task selector — tappable paper rows */
+.focus-task-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.focus-task {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.7rem 0.8rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.focus-task:hover:not(.active) {
+  border-color: var(--primary);
+  background: var(--surface-3);
+}
+
+.focus-task.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.focus-task-radio {
+  flex-shrink: 0;
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.focus-task.active .focus-task-radio {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 3px var(--primary);
+}
+
+.focus-task-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.focus-task-text {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.focus-task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Mode presets + custom input */
+.focus-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.focus-mode {
+  flex: 1 1 6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.focus-mode:hover:not(.active) {
+  border-color: var(--primary);
+  background: var(--surface-2);
+}
+
+.focus-mode.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.focus-mode-label {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.focus-mode-min {
+  font-size: 0.74rem;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-custom {
+  flex: 1 1 6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+}
+
+.focus-custom-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+.focus-custom input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.focus-custom input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+/* The clock — large and readable */
+.focus-clock-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.5rem 0 1.25rem;
+}
+
+.focus-clock {
+  font-size: clamp(3.5rem, 2rem + 9vw, 5.5rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.focus-progress {
+  width: 100%;
+  max-width: 22rem;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.focus-progress-bar {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  transition: width 0.95s linear;
+}
+
+.focus-clock-caption {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 30rem;
+}
+
+/* Controls — easy to tap */
+.focus-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+}
+
+.focus-controls .btn-primary,
+.focus-controls .btn-secondary {
+  flex: 1 1 8rem;
+  justify-content: center;
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+
+.focus-controls .btn-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Session log */
+.focus-session-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.focus-session {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.focus-session-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.focus-session-text {
+  font-size: 0.88rem;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.focus-session-meta {
+  font-size: 0.76rem;
+  color: var(--text-faint);
+}
+
+.focus-session-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.focus-session-min {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ~375px refinement */
+@media (max-width: 480px) {
+  .focus-panel {
+    padding: 0.95rem 1rem 1.05rem;
+  }
+
+  .focus-mode,
+  .focus-custom {
+    flex-basis: calc(50% - 0.25rem);
+  }
+
+  .focus-controls .btn-primary,
+  .focus-controls .btn-secondary {
+    flex-basis: calc(50% - 0.3rem);
+  }
+}

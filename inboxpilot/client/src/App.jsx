@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import EmailDetail from "./pages/EmailDetail.jsx";
 import TextAssistant from "./pages/TextAssistant.jsx";
 import StudyPlanner from "./pages/StudyPlanner.jsx";
+import FocusTimer from "./pages/FocusTimer.jsx";
 import Tasks from "./pages/Tasks.jsx";
 import Notes from "./pages/Notes.jsx";
 import Deadlines from "./pages/Deadlines.jsx";
@@ -57,6 +58,22 @@ export default function App() {
           element={
             <ProtectedRoute>
               <StudyPlanner />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/daily-planner"
+          element={
+            <ProtectedRoute>
+              <StudyPlanner />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/focus"
+          element={
+            <ProtectedRoute>
+              <FocusTimer />
             </ProtectedRoute>
           }
         />
