@@ -84,18 +84,35 @@ Respond ONLY with valid JSON in this exact format (no markdown, no code fences):
 }
 
 /**
+ * Tone guidance lines for AI suggested replies.
+ * Used by suggestReply to adjust the reply's tone. Unknown tones fall back to professional.
+ */
+const TONE_GUIDANCE = {
+  professional: "Use a professional, courteous tone.",
+  friendly: "Use a warm, friendly, approachable tone.",
+  short: "Keep it very short and to the point (1-3 sentences).",
+  apology: "Use an apologetic, understanding tone that takes responsibility politely.",
+  thank_you: "Use a grateful, appreciative thank-you tone.",
+  follow_up: "Use a polite follow-up tone that gently checks in on a prior message.",
+};
+
+/**
  * Generate an AI suggested reply for an email.
  * Returns plain text reply suggestion. User must review before using.
+ * The optional `tone` parameter adjusts the reply's tone (defaults to professional);
+ * unknown tones fall back to professional. The existing 3-arg callers are unaffected.
  */
-async function suggestReply(emailBody, subject, senderName) {
+async function suggestReply(emailBody, subject, senderName, tone = "professional") {
   const model = getModel();
+
+  const toneLine = TONE_GUIDANCE[tone] || TONE_GUIDANCE.professional;
 
   const prompt = `You are an email reply assistant. Generate a professional, helpful reply suggestion for the following email.
 
 Rules:
 - This is a SUGGESTION only. The user will review, edit, and decide whether to use it.
 - Do not include any fake details, names, dates, or information not present in the original email.
-- Keep the tone professional and courteous.
+- ${toneLine}
 - Keep it concise (3-8 sentences).
 - Do not add a signature or sign-off name — the user will add their own.
 - Do not reference sending the email. This is only a suggested reply text for the user to review.
@@ -107,6 +124,33 @@ Original Email Body:
 ${emailBody}
 
 Write ONLY the suggested reply text (plain text, no JSON, no markdown formatting):`;
+
+  const result = await model.generateContent(prompt);
+  return result.response.text().trim();
+}
+
+/**
+ * Simplify arbitrary text into plain, clear language.
+ * Returns trimmed plain text (no JSON, no markdown). Does not invent facts.
+ */
+async function simplifyText(text) {
+  const model = getModel();
+
+  const prompt = `You are a text simplification assistant. Rewrite the following text in
+plain, clear language that is easy to understand.
+
+Rules:
+- Only use information explicitly present in the text. Do not add, invent, or assume any
+  details that are not in the original.
+- Keep all important facts, names, dates, and numbers exactly as written.
+- Prefer short sentences and common words.
+- Do not summarize away key details — simplify the wording, keep the meaning.
+- Return plain text only (no JSON, no markdown formatting).
+
+Text:
+${text}
+
+Write ONLY the simplified version:`;
 
   const result = await model.generateContent(prompt);
   return result.response.text().trim();
@@ -135,4 +179,4 @@ function parseJSON(text) {
   }
 }
 
-module.exports = { summarizeEmail, extractTasks, suggestReply };
+module.exports = { summarizeEmail, extractTasks, suggestReply, simplifyText };
