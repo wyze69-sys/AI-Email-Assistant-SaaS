@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { captureTokenFromURL, isAuthenticated } from "./services/auth.js";
 import Login from "./pages/Login.jsx";
+import Workspace from "./pages/Workspace.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import EmailDetail from "./pages/EmailDetail.jsx";
 import Search from "./pages/Search.jsx";
@@ -33,6 +34,14 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route
+          path="/workspace"
+          element={
+            <ProtectedRoute>
+              <Workspace />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={

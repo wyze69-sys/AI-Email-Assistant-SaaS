@@ -6,6 +6,7 @@ import { NavLink } from "react-router-dom";
  * so it stays clean down to ~375px width.
  */
 const LINKS = [
+  { to: "/workspace", label: "Workspace" },
   { to: "/dashboard", label: "Inbox" },
   { to: "/capture", label: "Capture" },
   { to: "/search", label: "Search" },
