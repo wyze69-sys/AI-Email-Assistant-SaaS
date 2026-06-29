@@ -10,6 +10,7 @@ import FocusTimer from "./pages/FocusTimer.jsx";
 import Tasks from "./pages/Tasks.jsx";
 import Notes from "./pages/Notes.jsx";
 import Deadlines from "./pages/Deadlines.jsx";
+import Resources from "./pages/Resources.jsx";
 import Settings from "./pages/Settings.jsx";
 
 /**
@@ -108,6 +109,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Deadlines />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/resources"
+          element={
+            <ProtectedRoute>
+              <Resources />
             </ProtectedRoute>
           }
         />

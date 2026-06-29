@@ -11,6 +11,7 @@ const LINKS = [
   { to: "/text", label: "Text" },
   { to: "/study-planner", label: "Plan" },
   { to: "/focus", label: "Focus" },
+  { to: "/resources", label: "Resources" },
   { to: "/tasks", label: "Tasks" },
   { to: "/notes", label: "Notes" },
   { to: "/deadlines", label: "Deadlines" },

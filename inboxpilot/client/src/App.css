@@ -3016,3 +3016,287 @@
     justify-content: center;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Resource library — links & references on a sheet                    */
+/* ------------------------------------------------------------------ */
+.resource-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.resource-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.resource-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 14rem;
+  min-width: 0;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.resource-search:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.resource-search-icon {
+  display: inline-flex;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.resource-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.resource-search-input:focus {
+  outline: none;
+}
+
+.resource-search-input::placeholder {
+  color: var(--text-faint);
+}
+
+.resource-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.resource-filter-label {
+  white-space: nowrap;
+}
+
+.resource-filter select,
+.resource-field select {
+  padding: 7px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.resource-add-btn {
+  flex-shrink: 0;
+}
+
+/* Add / edit form */
+.resource-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.resource-form-head h3 {
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.resource-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.resource-field > span {
+  font-weight: 500;
+}
+
+.resource-req {
+  font-weight: 400;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.62rem;
+  margin-left: 0.3rem;
+}
+
+.resource-field input,
+.resource-field textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 0.88rem;
+  color: var(--text);
+  font-family: inherit;
+}
+
+.resource-field input:focus,
+.resource-field textarea:focus,
+.resource-field select:focus,
+.resource-filter select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.resource-field textarea {
+  resize: vertical;
+}
+
+.resource-field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.resource-field-grow {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.resource-form-error {
+  font-size: 0.8rem;
+  color: var(--warn);
+}
+
+.resource-form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Resource list */
+.resource-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+}
+
+.resource-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.85rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.resource-card-main {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.resource-card-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.resource-card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.resource-cat {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.resource-card-url {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.resource-card-url:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.resource-card-notes {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.resource-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.resource-tag {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.resource-card-date {
+  font-size: 0.68rem;
+  color: var(--text-faint);
+}
+
+.resource-card-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 560px) {
+  .resource-card {
+    flex-direction: column;
+  }
+
+  .resource-card-tools {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    align-self: stretch;
+  }
+
+  .resource-add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

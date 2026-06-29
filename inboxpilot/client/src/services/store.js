@@ -15,11 +15,13 @@
  * Versioned keys:
  *   inboxpilot:tasks:v1
  *   inboxpilot:notes:v1
+ *   inboxpilot:resources:v1
  */
 
 const TASKS_KEY = "inboxpilot:tasks:v1";
 const NOTES_KEY = "inboxpilot:notes:v1";
 const STUDY_PLANNER_KEY = "inboxpilot:study-planner:v1";
+const RESOURCES_KEY = "inboxpilot:resources:v1";
 
 const VALID_STATUS = ["todo", "in_progress", "done"];
 const VALID_PRIORITY = ["high", "medium", "low"];
@@ -256,6 +258,175 @@ export function removeNote(id) {
   const next = notes.filter((n) => n.id !== String(id));
   if (next.length === notes.length) return false;
   return writeArray(NOTES_KEY, next);
+}
+
+/* ------------------------------------------------------------------ */
+/* Resource Library API (local-only bookmarks / references)            */
+/* ------------------------------------------------------------------ */
+
+const VALID_RESOURCE_CATEGORIES = [
+  "general",
+  "article",
+  "document",
+  "tool",
+  "project",
+  "tutorial",
+  "meeting",
+  "custom",
+];
+
+// Schemes we never store as a clickable link.
+const UNSAFE_URL_SCHEME = /^(javascript|data|file|vbscript|blob|about|mailto|tel|ftp):/i;
+
+/**
+ * Normalize a user-entered resource URL into a safe http(s) link.
+ *
+ * Returns:
+ *   ""    when the input is blank (the resource simply has no link)
+ *   null  when the input is present but unsafe / unparseable (reject it)
+ *   a normalized "https://…" (or "http://…") string otherwise
+ *
+ * Rules:
+ *   - "example.com"            -> "https://example.com"
+ *   - "https://example.com"    -> kept (trailing "/" trimmed for a bare host)
+ *   - "http://x"               -> allowed
+ *   - "javascript:alert(1)"    -> null (rejected)
+ *   - "data:…", "file:…"       -> null (rejected)
+ *
+ * Never throws.
+ */
+export function normalizeResourceUrl(url) {
+  if (typeof url !== "string") return "";
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+
+  // Explicitly reject unsafe / non-web schemes.
+  if (UNSAFE_URL_SCHEME.test(trimmed)) return null;
+
+  let candidate = trimmed;
+  if (!/^https?:\/\//i.test(candidate)) {
+    // Declares some other scheme with "//" (e.g. ssh://) -> reject.
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(candidate)) return null;
+    // Otherwise assume the user meant a plain web host.
+    candidate = `https://${candidate}`;
+  }
+
+  try {
+    const u = new URL(candidate);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    if (!u.hostname) return null;
+    // Trim a lone trailing slash for a bare host so "example.com" stays tidy.
+    if (u.pathname === "/" && !u.search && !u.hash) return u.origin;
+    return u.href;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parse tags from a comma-separated string (or an array). Trims whitespace,
+ * drops empty entries, and removes case-insensitive duplicates. Never throws.
+ */
+export function parseResourceTags(tagsText) {
+  const source = Array.isArray(tagsText)
+    ? tagsText
+    : typeof tagsText === "string"
+    ? tagsText.split(",")
+    : [];
+  const out = [];
+  const seen = new Set();
+  for (const raw of source) {
+    if (typeof raw !== "string") continue;
+    const tag = raw.trim();
+    if (!tag) continue;
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(tag);
+  }
+  return out;
+}
+
+function normalizeResource(input) {
+  const now = Date.now();
+  const category = VALID_RESOURCE_CATEGORIES.includes(input?.category)
+    ? input.category
+    : "general";
+  const safeUrl = normalizeResourceUrl(
+    typeof input?.url === "string" ? input.url : ""
+  );
+  return {
+    id: input?.id ? String(input.id) : makeId(),
+    title: typeof input?.title === "string" ? input.title.trim() : "",
+    url: safeUrl ? safeUrl : "",
+    category,
+    notes: typeof input?.notes === "string" ? input.notes : "",
+    tags: parseResourceTags(input?.tags),
+    createdAt: typeof input?.createdAt === "number" ? input.createdAt : now,
+    updatedAt: typeof input?.updatedAt === "number" ? input.updatedAt : now,
+  };
+}
+
+/**
+ * Return all saved resources. Callers can sort. Never throws.
+ */
+export function listResources() {
+  return readArray(RESOURCES_KEY).map(normalizeResource);
+}
+
+/**
+ * Add a resource. Requires a non-blank title. Returns the stored resource,
+ * or null if the title is blank or it couldn't be saved.
+ */
+export function addResource(resource) {
+  const normalized = normalizeResource(resource);
+  if (!normalized.title) return null;
+  const all = listResources();
+  all.push(normalized);
+  return writeArray(RESOURCES_KEY, all) ? normalized : null;
+}
+
+/**
+ * Patch a resource by id. Blank titles in the patch are ignored so a
+ * resource is never left untitled. Returns the updated resource or null.
+ */
+export function updateResource(id, patch) {
+  if (!id || !patch || typeof patch !== "object") return null;
+  const all = listResources();
+  const idx = all.findIndex((r) => r.id === String(id));
+  if (idx === -1) return null;
+
+  const next = { ...all[idx] };
+  if (typeof patch.title === "string") {
+    const t = patch.title.trim();
+    if (t) next.title = t;
+  }
+  if ("url" in patch) {
+    const safe = normalizeResourceUrl(
+      typeof patch.url === "string" ? patch.url : ""
+    );
+    next.url = safe ? safe : "";
+  }
+  if (patch.category && VALID_RESOURCE_CATEGORIES.includes(patch.category)) {
+    next.category = patch.category;
+  }
+  if (typeof patch.notes === "string") next.notes = patch.notes;
+  if ("tags" in patch) next.tags = parseResourceTags(patch.tags);
+  next.updatedAt = Date.now();
+
+  all[idx] = next;
+  return writeArray(RESOURCES_KEY, all) ? next : null;
+}
+
+/**
+ * Remove a resource by id. Returns true if one was removed and persisted.
+ */
+export function removeResource(id) {
+  if (!id) return false;
+  const all = listResources();
+  const next = all.filter((r) => r.id !== String(id));
+  if (next.length === all.length) return false;
+  return writeArray(RESOURCES_KEY, next);
 }
 
 /* ------------------------------------------------------------------ */
@@ -623,6 +794,7 @@ export function getLocalDataSummary() {
   return {
     tasks: listTasks().length,
     notes: listNotes().length,
+    resources: listResources().length,
     focusSessions: listFocusSessions().length,
     plannerConfigured,
     plannerStyle: getStudyPlannerPrefs().planStyle,
@@ -656,6 +828,7 @@ export function buildBackup() {
     exportedAt: new Date().toISOString(),
     tasks: listTasks(),
     notes: listNotes(),
+    resources: listResources(),
     plannerPrefs: getStudyPlannerPrefs(),
     focusSessions: listFocusSessions(),
     aiResults,
@@ -692,6 +865,7 @@ export function importBackup(parsed) {
   const imported = {
     tasks: 0,
     notes: 0,
+    resources: 0,
     focusSessions: 0,
     planner: false,
     aiResults: 0,
@@ -706,6 +880,15 @@ export function importBackup(parsed) {
     if (Array.isArray(parsed.notes)) {
       const normalized = parsed.notes.map(normalizeNote);
       if (writeArray(NOTES_KEY, normalized)) imported.notes = normalized.length;
+    }
+
+    if (Array.isArray(parsed.resources)) {
+      const normalized = parsed.resources
+        .map(normalizeResource)
+        .filter((r) => r.title);
+      if (writeArray(RESOURCES_KEY, normalized)) {
+        imported.resources = normalized.length;
+      }
     }
 
     if (Array.isArray(parsed.focusSessions)) {
@@ -758,6 +941,10 @@ export function clearNotes() {
   return removeKey(NOTES_KEY);
 }
 
+export function clearResources() {
+  return removeKey(RESOURCES_KEY);
+}
+
 export function clearFocusSessions() {
   return removeKey(FOCUS_SESSIONS_KEY);
 }
@@ -787,6 +974,7 @@ export function clearAllProductivityData() {
   const results = [
     clearTasks(),
     clearNotes(),
+    clearResources(),
     clearFocusSessions(),
     clearPlannerPrefs(),
     clearAiResults(),
