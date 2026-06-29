@@ -10,7 +10,7 @@ const LINKS = [
   { to: "/dashboard", label: "Inbox" },
   { to: "/capture", label: "Capture" },
   { to: "/search", label: "Search" },
-  { to: "/text", label: "Text" },
+  { to: "/text", label: "Message" },
   { to: "/study-planner", label: "Plan" },
   { to: "/focus", label: "Focus" },
   { to: "/resources", label: "Resources" },

@@ -170,9 +170,8 @@ export default function TextAssistant() {
       <header className="text-assistant-header">
         <h1>Message Assistant</h1>
         <p className="text-assistant-subtitle">
-          Paste an email, message, announcement, meeting note, or document
-          text. Turn it into a summary, tasks, simplified notes, or a reply
-          draft.
+          Paste a message, announcement, meeting note, or document text. Turn it
+          into a summary, tasks, simplified notes, or a reply draft.
         </p>
       </header>
 

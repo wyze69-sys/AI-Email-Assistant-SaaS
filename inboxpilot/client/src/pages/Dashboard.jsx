@@ -177,7 +177,13 @@ export default function Dashboard() {
         <WorkspaceNav />
         <div className="dashboard-intro enter-1">
           <h2>Inbox</h2>
-          <p>Pick an email to summarize it, extract tasks, or draft a reply.</p>
+          <p>
+            Review Gmail messages, summarize long threads, extract tasks, and
+            draft replies.
+          </p>
+          <p className="inbox-safety-note">
+            Gmail stays read-only. Replies are drafts until you copy them.
+          </p>
         </div>
 
         {/* Gmail connection status */}

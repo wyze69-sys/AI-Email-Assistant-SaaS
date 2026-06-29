@@ -158,9 +158,9 @@ export default function Workspace() {
 
   const summaryCards = [
     { id: "tasks", label: "Active tasks", value: activeTasks.length, to: "/tasks" },
-    { id: "due", label: "Due today / overdue", value: dueTodayCount, to: "/deadlines" },
-    { id: "notes", label: "Notes", value: notes.length, to: "/notes" },
-    { id: "resources", label: "Resources", value: resources.length, to: "/resources" },
+    { id: "due", label: "Due now", value: dueTodayCount, to: "/deadlines" },
+    { id: "notes", label: "Notes saved", value: notes.length, to: "/notes" },
+    { id: "resources", label: "Resources saved", value: resources.length, to: "/resources" },
     { id: "captures", label: "Open captures", value: openCaptures.length, to: "/capture" },
     { id: "focus", label: "Focus minutes", value: focusMinutes, to: "/focus" },
   ];
@@ -184,7 +184,7 @@ export default function Workspace() {
   return (
     <WorkspaceShell
       title="Workspace"
-      subtitle="One calm home view of everything you've saved on this device."
+      subtitle="Start here. See what needs attention, what you saved, and where to go next."
     >
       {!hasAnyData ? (
         <div className="empty-state">
@@ -204,8 +204,7 @@ export default function Workspace() {
           </span>
           <h3>Your workspace is ready</h3>
           <p>
-            Capture an idea, summarize a message, or save your first task to
-            begin.
+            Capture an idea, summarize a message, or save your first task.
           </p>
           <div className="workspace-empty-actions">
             <button className="btn-primary" onClick={() => navigate("/capture")}>

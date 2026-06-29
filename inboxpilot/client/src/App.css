@@ -440,6 +440,15 @@
   font-size: 0.9rem;
 }
 
+/* Read-only safety reminder on the Inbox — quiet, full-width line */
+.inbox-safety-note {
+  flex-basis: 100%;
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  opacity: 0.85;
+}
+
 /* Gmail connection — a quiet system status strip */
 .gmail-status {
   padding: 0.6rem 0.9rem;

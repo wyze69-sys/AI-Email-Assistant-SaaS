@@ -10,9 +10,9 @@ const STEPS = [
 ];
 
 const SAFETY = [
-  "Gmail stays read-only.",
-  "Nothing is sent automatically.",
-  "You decide what to send.",
+  "Gmail is read-only",
+  "Replies stay as drafts",
+  "Local workspace data stays in this browser unless exported",
 ];
 
 const TRUST = [
@@ -27,7 +27,7 @@ export default function Login() {
 
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate("/dashboard", { replace: true });
+      navigate("/workspace", { replace: true });
       return;
     }
 
@@ -53,10 +53,12 @@ export default function Login() {
             InboxPilot
           </div>
 
-          <h1 className="auth-title">Read long emails faster.</h1>
+          <h1 className="auth-title">
+            One workspace for messages, tasks, notes, and follow-ups.
+          </h1>
           <p className="auth-subtitle">
-            InboxPilot connects to Gmail and helps you find the point of a
-            message, pull out action items, and draft a reply to review.
+            Connect Gmail, paste text, capture ideas, and organize the next step
+            without changing how you send email.
           </p>
 
           <ul className="safety-promise" aria-label="Safety">
