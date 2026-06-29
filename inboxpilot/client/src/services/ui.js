@@ -114,3 +114,125 @@ export function tasksToText(tasks) {
     })
     .join("\n");
 }
+
+/**
+ * Local AI result history (per email, browser-only).
+ *
+ * Stores ONLY AI tool output and the timestamp it was generated.
+ * It never stores Gmail OAuth tokens, the JWT, or the raw email body.
+ * Results are namespaced per email id so returning to an email rehydrates
+ * the last AI output the user generated on this device.
+ *
+ * Key format: inboxpilot:ai-results:v1:{emailId}
+ */
+const AI_RESULTS_PREFIX = "inboxpilot:ai-results:v1:";
+
+function aiResultsKey(emailId) {
+  return `${AI_RESULTS_PREFIX}${emailId}`;
+}
+
+/**
+ * True when localStorage can actually be read/written in this context.
+ * Some browsers throw on access (private mode, disabled storage), so we probe.
+ */
+function storageAvailable() {
+  try {
+    const probe = "__inboxpilot_probe__";
+    window.localStorage.setItem(probe, "1");
+    window.localStorage.removeItem(probe);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Read all saved AI results for an email id.
+ * Returns an object like { summary, tasks, reply } where each value is
+ * { data, generatedAt } — or an empty object if nothing is saved / on any error.
+ * Never throws.
+ */
+export function loadAiResults(emailId) {
+  if (!emailId || !storageAvailable()) return {};
+  try {
+    const raw = window.localStorage.getItem(aiResultsKey(emailId));
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    // Corrupt JSON or read error — degrade silently with no saved results.
+    return {};
+  }
+}
+
+/**
+ * Save (or replace) a single AI tool result for an email id.
+ * `tool` is one of "summary" | "tasks" | "reply".
+ * Stores the result plus a generated timestamp. Returns true on success.
+ * Never throws.
+ */
+export function saveAiResult(emailId, tool, data) {
+  if (!emailId || !tool || !storageAvailable()) return false;
+  try {
+    const current = loadAiResults(emailId);
+    current[tool] = { data, generatedAt: Date.now() };
+    window.localStorage.setItem(aiResultsKey(emailId), JSON.stringify(current));
+    return true;
+  } catch {
+    // Quota exceeded or serialization error — fail quietly.
+    return false;
+  }
+}
+
+/**
+ * Remove a single saved AI tool result for an email id.
+ * Cleans up the whole entry when nothing else remains. Never throws.
+ */
+export function clearAiResult(emailId, tool) {
+  if (!emailId || !tool || !storageAvailable()) return;
+  try {
+    const current = loadAiResults(emailId);
+    if (!(tool in current)) return;
+    delete current[tool];
+    if (Object.keys(current).length === 0) {
+      window.localStorage.removeItem(aiResultsKey(emailId));
+    } else {
+      window.localStorage.setItem(aiResultsKey(emailId), JSON.stringify(current));
+    }
+  } catch {
+    // Ignore — nothing else we can safely do here.
+  }
+}
+
+/**
+ * Remove every saved AI result for an email id. Never throws.
+ */
+export function clearAllAiResults(emailId) {
+  if (!emailId || !storageAvailable()) return;
+  try {
+    window.localStorage.removeItem(aiResultsKey(emailId));
+  } catch {
+    // Ignore.
+  }
+}
+
+/**
+ * Format a stored timestamp into a short, friendly "saved locally" label.
+ * Falls back to a plain label if the timestamp is missing or invalid.
+ */
+export function savedLocallyLabel(generatedAt) {
+  if (!generatedAt) return "Saved locally";
+  try {
+    const when = new Date(generatedAt);
+    if (Number.isNaN(when.getTime())) return "Saved locally";
+    const time = when.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    return `Saved locally · ${time}`;
+  } catch {
+    return "Saved locally";
+  }
+}

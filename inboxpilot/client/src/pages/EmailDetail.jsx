@@ -7,7 +7,13 @@ import {
   copyToClipboard,
   summaryToText,
   tasksToText,
+  loadAiResults,
+  saveAiResult,
+  clearAiResult,
+  clearAllAiResults,
+  savedLocallyLabel,
 } from "../services/ui.js";
+import { addNote, addTasks } from "../services/store.js";
 
 export default function EmailDetail() {
   const { id } = useParams();
@@ -32,8 +38,47 @@ export default function EmailDetail() {
   // Tracks which copy button was last clicked, for transient "Copied" feedback
   const [copied, setCopied] = useState("");
 
+  // Timestamps for AI results restored from / saved to localStorage.
+  // { summary, tasks, reply } — a value means that tool's result is saved locally.
+  const [savedAt, setSavedAt] = useState({});
+
+  // Transient feedback for "save to productivity store" actions.
+  // noteSaved: boolean, tasksSaved: message string (added count / already saved).
+  const [noteSaved, setNoteSaved] = useState(false);
+  const [tasksSavedMsg, setTasksSavedMsg] = useState("");
+
   useEffect(() => {
     loadEmail();
+  }, [id]);
+
+  // Hydrate AI results from the per-email local history when the email changes.
+  useEffect(() => {
+    if (!id) return;
+    // Reset in-memory AI state so results never bleed between emails.
+    setSummary(null);
+    setTasks(null);
+    setReply(null);
+    setSummaryError(null);
+    setTasksError(null);
+    setReplyError(null);
+    setNoteSaved(false);
+    setTasksSavedMsg("");
+
+    const saved = loadAiResults(id);
+    const restored = {};
+    if (saved.summary && saved.summary.data) {
+      setSummary(saved.summary.data);
+      restored.summary = saved.summary.generatedAt;
+    }
+    if (saved.tasks && saved.tasks.data) {
+      setTasks(saved.tasks.data);
+      restored.tasks = saved.tasks.generatedAt;
+    }
+    if (saved.reply && saved.reply.data) {
+      setReply(saved.reply.data);
+      restored.reply = saved.reply.generatedAt;
+    }
+    setSavedAt(restored);
   }, [id]);
 
   async function loadEmail() {
@@ -56,6 +101,9 @@ export default function EmailDetail() {
     try {
       const data = await summarizeEmail(id);
       setSummary(data);
+      if (saveAiResult(id, "summary", data)) {
+        setSavedAt((s) => ({ ...s, summary: Date.now() }));
+      }
     } catch (err) {
       setSummaryError(friendlyError(err, "We couldn't summarize this email."));
     } finally {
@@ -70,6 +118,9 @@ export default function EmailDetail() {
     try {
       const data = await extractTasks(id);
       setTasks(data);
+      if (saveAiResult(id, "tasks", data)) {
+        setSavedAt((s) => ({ ...s, tasks: Date.now() }));
+      }
     } catch (err) {
       setTasksError(friendlyError(err, "We couldn't extract tasks from this email."));
     } finally {
@@ -84,11 +135,84 @@ export default function EmailDetail() {
     try {
       const data = await suggestReply(id);
       setReply(data.reply);
+      if (saveAiResult(id, "reply", data.reply)) {
+        setSavedAt((s) => ({ ...s, reply: Date.now() }));
+      }
     } catch (err) {
       setReplyError(friendlyError(err, "We couldn't draft a reply for this email."));
     } finally {
       setReplyLoading(false);
     }
+  }
+
+  function handleClearSaved(tool) {
+    clearAiResult(id, tool);
+    setSavedAt((s) => {
+      const next = { ...s };
+      delete next[tool];
+      return next;
+    });
+    if (tool === "summary") {
+      setSummary(null);
+      setSummaryError(null);
+    } else if (tool === "tasks") {
+      setTasks(null);
+      setTasksError(null);
+    } else if (tool === "reply") {
+      setReply(null);
+      setReplyError(null);
+    }
+  }
+
+  function handleClearAllSaved() {
+    clearAllAiResults(id);
+    setSavedAt({});
+    setSummary(null);
+    setTasks(null);
+    setReply(null);
+    setSummaryError(null);
+    setTasksError(null);
+    setReplyError(null);
+  }
+
+  // Save the current summary as a Note in the local productivity store.
+  function handleSaveNote() {
+    if (!summary) return;
+    const note = addNote({
+      title: email?.subject || "Email summary",
+      body: summary.summary || "",
+      keyPoints: Array.isArray(summary.keyPoints) ? summary.keyPoints : [],
+      source: { type: "email", id },
+    });
+    // addNote returns the stored (or existing duplicate) note; treat any
+    // non-null return as success. Duplicates simply don't create a repeat.
+    if (note) {
+      setNoteSaved(true);
+      setTimeout(() => setNoteSaved(false), 2500);
+    }
+  }
+
+  // Save the current extracted tasks to the local Task board.
+  function handleSaveTasks() {
+    if (!hasTasks) return;
+    const payload = tasks.tasks.map((t) => ({
+      text: t.task,
+      deadline: t.deadline || null,
+      priority: t.priority || null,
+      status: "todo",
+      source: { type: "email", id },
+    }));
+    const added = addTasks(payload);
+    if (added.length === 0) {
+      setTasksSavedMsg("Already on your board");
+    } else if (added.length === payload.length) {
+      setTasksSavedMsg(
+        `Saved ${added.length} task${added.length === 1 ? "" : "s"} locally`
+      );
+    } else {
+      setTasksSavedMsg(`Saved ${added.length} new locally`);
+    }
+    setTimeout(() => setTasksSavedMsg(""), 3000);
   }
 
   async function handleCopy(key, text) {
@@ -121,6 +245,7 @@ export default function EmailDetail() {
   }
 
   const hasTasks = tasks && tasks.tasks && tasks.tasks.length > 0;
+  const hasAnySaved = Boolean(savedAt.summary || savedAt.tasks || savedAt.reply);
 
   return (
     <div className="email-detail">
@@ -130,7 +255,8 @@ export default function EmailDetail() {
         </button>
       </header>
 
-      <article className="email-content enter-1">
+      <div className="email-detail-layout">
+      <article className="email-content email-sheet enter-1">
         <h2 className="email-detail-subject">
           {email.subject || "(no subject)"}
         </h2>
@@ -162,10 +288,12 @@ export default function EmailDetail() {
         <div className="email-body">
           <pre className="email-body-text">{email.body}</pre>
         </div>
+      </article>
 
-        {/* AI tools */}
+      {/* AI assistant panel — a quiet side utility */}
+      <aside className="ai-panel enter-2" aria-label="AI assistant">
         <div className="ai-toolbar">
-          <p className="ai-toolbar-label">AI tools</p>
+          <p className="ai-toolbar-label">Assistant</p>
           <div className="ai-actions">
             <button
               className="btn-ai"
@@ -215,6 +343,14 @@ export default function EmailDetail() {
               </span>
             </button>
           </div>
+          {hasAnySaved && (
+            <div className="ai-saved-bar">
+              <span className="ai-saved-note">Local AI history saved on this device</span>
+              <button className="btn-link-quiet" onClick={handleClearAllSaved}>
+                Clear all saved
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Summary */}
@@ -234,6 +370,11 @@ export default function EmailDetail() {
             <div className="ai-result-head">
               <h3>Summary</h3>
               <span className="ai-result-badge">AI</span>
+              {savedAt.summary && (
+                <span className="ai-saved-label" title="Stored only in this browser">
+                  {savedLocallyLabel(savedAt.summary)}
+                </span>
+              )}
               <div className="ai-result-tools">
                 <button
                   className="btn-chip"
@@ -243,11 +384,25 @@ export default function EmailDetail() {
                 </button>
                 <button
                   className="btn-chip"
+                  onClick={handleSaveNote}
+                >
+                  {noteSaved ? "Saved locally" : "Save as note"}
+                </button>
+                <button
+                  className="btn-chip"
                   onClick={handleSummarize}
                   disabled={summaryLoading}
                 >
                   Regenerate
                 </button>
+                {savedAt.summary && (
+                  <button
+                    className="btn-chip btn-chip-quiet"
+                    onClick={() => handleClearSaved("summary")}
+                  >
+                    Clear saved result
+                  </button>
+                )}
               </div>
             </div>
             <p className="ai-summary-text">{summary.summary}</p>
@@ -291,6 +446,11 @@ export default function EmailDetail() {
             <div className="ai-result-head">
               <h3>Extracted tasks</h3>
               <span className="ai-result-badge">AI</span>
+              {savedAt.tasks && (
+                <span className="ai-saved-label" title="Stored only in this browser">
+                  {savedLocallyLabel(savedAt.tasks)}
+                </span>
+              )}
               <div className="ai-result-tools">
                 {hasTasks && (
                   <button
@@ -300,6 +460,11 @@ export default function EmailDetail() {
                     {copied === "tasks" ? "Copied" : "Copy"}
                   </button>
                 )}
+                {hasTasks && (
+                  <button className="btn-chip" onClick={handleSaveTasks}>
+                    {tasksSavedMsg || "Save to board"}
+                  </button>
+                )}
                 <button
                   className="btn-chip"
                   onClick={handleExtractTasks}
@@ -307,6 +472,14 @@ export default function EmailDetail() {
                 >
                   Regenerate
                 </button>
+                {savedAt.tasks && (
+                  <button
+                    className="btn-chip btn-chip-quiet"
+                    onClick={() => handleClearSaved("tasks")}
+                  >
+                    Clear saved result
+                  </button>
+                )}
               </div>
             </div>
             {hasTasks ? (
@@ -354,6 +527,11 @@ export default function EmailDetail() {
             <div className="ai-result-head">
               <h3>Suggested reply</h3>
               <span className="ai-result-badge">AI</span>
+              {savedAt.reply && (
+                <span className="ai-saved-label" title="Stored only in this browser">
+                  {savedLocallyLabel(savedAt.reply)}
+                </span>
+              )}
               <div className="ai-result-tools">
                 <button
                   className="btn-chip"
@@ -368,6 +546,14 @@ export default function EmailDetail() {
                 >
                   Regenerate
                 </button>
+                {savedAt.reply && (
+                  <button
+                    className="btn-chip btn-chip-quiet"
+                    onClick={() => handleClearSaved("reply")}
+                  >
+                    Clear saved result
+                  </button>
+                )}
               </div>
             </div>
             <p className="ai-reply-note">
@@ -393,7 +579,8 @@ export default function EmailDetail() {
             </div>
           </div>
         )}
-      </article>
+      </aside>
+      </div>
     </div>
   );
 }

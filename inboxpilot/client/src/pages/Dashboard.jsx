@@ -4,6 +4,17 @@ import { fetchCurrentUser, logout, getGoogleLoginURL } from "../services/auth.js
 import { fetchEmails } from "../services/emails.js";
 import { friendlyError } from "../services/ui.js";
 import EmailList from "../components/EmailList.jsx";
+import WorkspaceNav from "../components/WorkspaceNav.jsx";
+
+// Quick inbox filters — map to Gmail search operators the existing
+// fetchEmails `q` param already understands. No backend changes needed.
+const FILTERS = [
+  { id: "all", label: "All", query: "" },
+  { id: "unread", label: "Unread", query: "is:unread" },
+  { id: "today", label: "Today", query: "newer_than:1d" },
+  { id: "attachments", label: "Attachments", query: "has:attachment" },
+  { id: "important", label: "Important", query: "is:important" },
+];
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -16,6 +27,8 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
+  // null = manual/custom search active, otherwise the active filter chip id.
+  const [activeFilter, setActiveFilter] = useState("all");
 
   useEffect(() => {
     // Token capture already handled at module level in App.jsx
@@ -66,6 +79,7 @@ export default function Dashboard() {
   function handleSearch(e) {
     e.preventDefault();
     if (emailsLoading) return; // prevent duplicate submits while loading
+    setActiveFilter(null); // manual search → no chip is active
     setEmails([]);
     setNextPageToken(null);
     setActiveQuery(searchQuery.trim());
@@ -76,9 +90,22 @@ export default function Dashboard() {
     if (emailsLoading) return;
     setSearchQuery("");
     setActiveQuery("");
+    setActiveFilter("all"); // clearing returns to the default inbox view
     setEmails([]);
     setNextPageToken(null);
     loadEmails(null, "");
+  }
+
+  function handleSelectFilter(filter) {
+    // Prevent duplicate requests while any load is in progress.
+    if (emailsLoading || loadingMore) return;
+    if (filter.id === activeFilter) return; // already showing this view
+    setSearchQuery(""); // chips drive the view, so clear the typed query
+    setActiveFilter(filter.id);
+    setActiveQuery(filter.query);
+    setEmails([]);
+    setNextPageToken(null);
+    loadEmails(null, filter.query);
   }
 
   function handleLoadMore() {
@@ -147,6 +174,7 @@ export default function Dashboard() {
       </header>
 
       <main className="dashboard-main">
+        <WorkspaceNav />
         <div className="dashboard-intro enter-1">
           <h2>Inbox</h2>
           <p>Pick an email to summarize it, extract tasks, or draft a reply.</p>
@@ -233,6 +261,28 @@ export default function Dashboard() {
               </button>
             </form>
 
+            <div
+              className="filter-chips"
+              role="group"
+              aria-label="Quick inbox filters"
+            >
+              {FILTERS.map((f) => {
+                const isActive = activeFilter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    className={`filter-chip ${isActive ? "active" : ""}`}
+                    aria-pressed={isActive}
+                    onClick={() => handleSelectFilter(f)}
+                    disabled={emailsLoading || loadingMore}
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
+            </div>
+
             <div className="list-meta">
               <span className="list-count">
                 {emailsLoading && emails.length === 0
@@ -240,10 +290,14 @@ export default function Dashboard() {
                   : emails.length > 0
                   ? `Showing ${emails.length} email${
                       emails.length === 1 ? "" : "s"
-                    }${activeQuery ? ` for “${activeQuery}”` : ""}`
+                    }${
+                      !activeFilter && activeQuery
+                        ? ` for “${activeQuery}”`
+                        : ""
+                    }`
                   : ""}
               </span>
-              {activeQuery && !emailsLoading && (
+              {!activeFilter && activeQuery && !emailsLoading && (
                 <button
                   type="button"
                   className="btn-link"
@@ -258,7 +312,7 @@ export default function Dashboard() {
               emails={emails}
               loading={emailsLoading}
               onEmailClick={handleEmailClick}
-              activeQuery={activeQuery}
+              activeQuery={activeFilter ? "" : activeQuery}
               onClearSearch={handleClearSearch}
             />
 

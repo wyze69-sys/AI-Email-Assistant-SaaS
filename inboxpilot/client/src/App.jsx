@@ -3,6 +3,9 @@ import { captureTokenFromURL, isAuthenticated } from "./services/auth.js";
 import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import EmailDetail from "./pages/EmailDetail.jsx";
+import Tasks from "./pages/Tasks.jsx";
+import Notes from "./pages/Notes.jsx";
+import Deadlines from "./pages/Deadlines.jsx";
 
 /**
  * Capture token from URL ONCE at module load time, before React renders.
@@ -36,6 +39,30 @@ export default function App() {
           element={
             <ProtectedRoute>
               <EmailDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <Tasks />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notes"
+          element={
+            <ProtectedRoute>
+              <Notes />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/deadlines"
+          element={
+            <ProtectedRoute>
+              <Deadlines />
             </ProtectedRoute>
           }
         />

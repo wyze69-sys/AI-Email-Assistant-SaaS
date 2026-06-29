@@ -2,22 +2,17 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { isAuthenticated, getGoogleLoginURL } from "../services/auth.js";
 
-const FEATURES = [
-  {
-    icon: "✦",
-    title: "Summarize long messages",
-    desc: "Get the key points and tone of an email in seconds.",
-  },
-  {
-    icon: "☑",
-    title: "Extract deadlines and action items",
-    desc: "Pull tasks and due dates out of dense threads.",
-  },
-  {
-    icon: "✉",
-    title: "Draft a reply to review",
-    desc: "Get a starting draft you read and edit before sending.",
-  },
+const STEPS = [
+  "Connect Gmail",
+  "Review email",
+  "Ask AI",
+  "Copy draft",
+];
+
+const SAFETY = [
+  "Gmail stays read-only.",
+  "Nothing is sent automatically.",
+  "You decide what to send.",
 ];
 
 const TRUST = [
@@ -51,34 +46,62 @@ export default function Login() {
 
   return (
     <main className="auth-page">
-      <div className="auth-container">
-        <section className="auth-hero enter-1">
+      <div className="auth-container enter-1">
+        <section className="auth-hero">
           <div className="brand">
             <span className="brand-mark">IP</span>
             InboxPilot
           </div>
-          <h1 className="auth-title">Review your inbox faster.</h1>
+
+          <h1 className="auth-title">Read long emails faster.</h1>
           <p className="auth-subtitle">
-            InboxPilot connects to Gmail and helps you understand emails,
-            surface deadlines, and draft replies you stay in control of.
+            InboxPilot connects to Gmail and helps you find the point of a
+            message, pull out action items, and draft a reply to review.
           </p>
 
-          <ul className="feature-preview">
-            {FEATURES.map((f) => (
-              <li className="feature-item" key={f.title}>
-                <span className="feature-icon" aria-hidden="true">
-                  {f.icon}
-                </span>
-                <span className="feature-text">
-                  <strong>{f.title}</strong>
-                  <span>{f.desc}</span>
-                </span>
+          <ul className="safety-promise" aria-label="Safety">
+            {SAFETY.map((item) => (
+              <li key={item}>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                {item}
               </li>
             ))}
           </ul>
+
+          <div className="how-it-works">
+            <p className="how-label">How it works</p>
+            <ol className="steps">
+              {STEPS.map((label, i) => (
+                <li className="step" key={label}>
+                  <span className="step-body">
+                    <span className="step-num">{i + 1}</span>
+                    {label}
+                  </span>
+                  {i < STEPS.length - 1 && (
+                    <span className="step-arrow" aria-hidden="true">
+                      →
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
         </section>
 
-        <section className="auth-card enter-2" aria-label="Sign in">
+        <section className="auth-card" aria-label="Sign in">
           <h2>Sign in</h2>
           <p className="auth-card-sub">
             Use your Google account to connect your Gmail inbox.

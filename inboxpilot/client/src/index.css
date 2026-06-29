@@ -1,60 +1,61 @@
 /* ==========================================================================
    InboxPilot — base styles & design tokens
-   Plain CSS design system. Calm, trustworthy, focused.
+   A calm, paper-and-ink email workspace. Quiet, precise, trustworthy.
    ========================================================================== */
 
 :root {
-  /* Surfaces & background */
-  --bg: #f4f6fa;
-  --bg-accent: #eef1f7;
-  --surface: #ffffff;
-  --surface-2: #f8fafc;
-  --surface-3: #f1f4f9;
+  /* Surfaces — warm paper layers rather than cool SaaS white */
+  --bg: #efece4;            /* desk / warm off-white paper */
+  --bg-accent: #e8e4da;
+  --surface: #fbfaf6;       /* a sheet of paper */
+  --surface-2: #f4f1ea;     /* recessed panel */
+  --surface-3: #ebe7dd;     /* hover / inset */
 
-  /* Borders */
-  --border: #e3e8f0;
-  --border-strong: #d2d9e6;
+  /* Borders — hairlines tuned to warm paper */
+  --border: #e0dbcf;
+  --border-strong: #cdc7b8;
 
-  /* Text */
-  --text: #1b2330;
-  --text-secondary: #586072;
-  --text-faint: #8b94a4;
+  /* Text — graphite ink */
+  --text: #23262b;
+  --text-secondary: #595e69;
+  --text-faint: #8b8f99;
 
-  /* Brand / accent — a single calm indigo, used sparingly */
-  --primary: #3a55c8;
-  --primary-hover: #2f47a8;
-  --primary-soft: #eef1fc;
-  --primary-border: #cdd6f5;
+  /* Accent — a muted blue-gray "ink stamp", used sparingly */
+  --primary: #46586a;
+  --primary-hover: #354655;
+  --primary-soft: #e8ecef;
+  --primary-border: #c8d0d8;
 
-  /* Semantic */
-  --success: #0e9f6e;
-  --success-hover: #0b8a5f;
-  --success-soft: #e7f6ef;
-  --success-border: #b9e6d2;
+  /* Semantic — green only for safe/connected, amber for attention */
+  --success: #3f7d5a;
+  --success-hover: #346b4c;
+  --success-soft: #e7efe7;
+  --success-border: #c2d8c5;
 
-  --danger: #d83a3a;
-  --danger-soft: #fdecec;
-  --danger-border: #f3c4c4;
+  --danger: #b04a40;
+  --danger-soft: #f5e6e2;
+  --danger-border: #e2c4bd;
 
-  --warn: #c2790b;
-  --warn-soft: #fbf2e1;
+  --warn: #a06c14;
+  --warn-soft: #f4ebd9;
+  --warn-border: #e6d4ac;
 
-  /* Radius */
-  --radius-sm: 8px;
-  --radius: 12px;
-  --radius-lg: 16px;
+  /* Radius — restrained, document-like */
+  --radius-sm: 5px;
+  --radius: 7px;
+  --radius-lg: 10px;
   --radius-pill: 999px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.05);
-  --shadow-md: 0 6px 18px rgba(16, 24, 40, 0.08);
-  --shadow-lg: 0 24px 56px rgba(16, 24, 40, 0.16);
+  /* Shadows — soft and minimal, paper resting on a desk */
+  --shadow-sm: 0 1px 1px rgba(45, 40, 28, 0.04);
+  --shadow-md: 0 2px 8px rgba(45, 40, 28, 0.07);
+  --shadow-lg: 0 8px 28px rgba(45, 40, 28, 0.1);
 
   /* Layout */
-  --content-width: 960px;
-  --reading-width: 760px;
+  --content-width: 1040px;
+  --reading-width: 720px;
 
-  /* Spacing scale — keeps section rhythm consistent */
+  /* Spacing scale */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -80,7 +81,9 @@ html {
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
-  background: var(--bg);
+  background-color: var(--bg);
+  /* Very light paper grain — pure CSS, no remote images */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
   color: var(--text);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -88,24 +91,27 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Headings: tighter tracking, balanced wrapping for cleaner hierarchy */
+/* Headings: editorial, quietly confident — not oversized hero text */
 h1,
 h2,
 h3 {
   text-wrap: balance;
   line-height: 1.25;
+  letter-spacing: -0.012em;
+  font-weight: 650;
 }
 
-/* Keep long-form body copy at a comfortable measure for scanning */
+/* Comfortable measure for scanning long-form copy */
 p {
   text-wrap: pretty;
 }
 
-/* Tabular, aligned figures for dates, counts, and other metadata */
+/* Tabular, aligned figures for dates, counts, and metadata */
 .tnum,
 .email-date,
 .list-count,
-.task-deadline {
+.task-deadline,
+.meta-row span {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
 }
@@ -124,11 +130,11 @@ button {
   font-family: inherit;
 }
 
-/* Visible, consistent keyboard focus across the app */
+/* Visible, consistent keyboard focus */
 :focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 /* ------------------------------------------------------------------ */
@@ -137,7 +143,7 @@ button {
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -145,28 +151,28 @@ button {
   }
 }
 
-.enter {
-  animation: fade-up 0.42s var(--ease-out) both;
+.enter,
+.enter-1,
+.enter-2,
+.enter-3 {
+  animation: fade-up 0.36s var(--ease-out) both;
 }
 
 .enter-1 {
-  animation: fade-up 0.42s var(--ease-out) both;
-  animation-delay: 0.04s;
+  animation-delay: 0.03s;
 }
 .enter-2 {
-  animation: fade-up 0.42s var(--ease-out) both;
-  animation-delay: 0.09s;
+  animation-delay: 0.07s;
 }
 .enter-3 {
-  animation: fade-up 0.42s var(--ease-out) both;
-  animation-delay: 0.14s;
+  animation-delay: 0.11s;
 }
 
-/* AI result cards, inline loading, and errors ease in as they render */
+/* AI panels, inline loading, and errors ease in as they render */
 .ai-result-section,
 .ai-loading,
 .ai-error {
-  animation: fade-up 0.34s var(--ease-out) both;
+  animation: fade-up 0.28s var(--ease-out) both;
 }
 
 /* Respect reduced-motion preferences */
