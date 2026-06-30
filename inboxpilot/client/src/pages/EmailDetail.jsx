@@ -8,7 +8,7 @@ import {
   reviewEmailPriority,
 } from "../services/ai.js";
 import { triageEmail, DISPLAY_LABELS } from "../services/triage.js";
-import { cleanEmailBody, bodyNeedsCleanup } from "../services/emailDisplay.js";
+import { cleanEmailBody, bodyNeedsCleanup, formatEmailBody } from "../services/emailDisplay.js";
 import {
   friendlyError,
   copyToClipboard,
@@ -80,6 +80,18 @@ export default function EmailDetail() {
     if (showOriginalBody || !canCleanBody) return email.body;
     return cleanEmailBody(email.body);
   }, [email, showOriginalBody, canCleanBody]);
+
+  // Reading-view blocks for the cleaned view (display-only). Null when showing
+  // the original raw body, so we render the exact <pre> instead.
+  const readingBlocks = useMemo(() => {
+    if (showOriginalBody || !canCleanBody) return null;
+    try {
+      const blocks = formatEmailBody(displayBody);
+      return blocks.length > 0 ? blocks : null;
+    } catch {
+      return null; // fall back to plain text on any formatting error
+    }
+  }, [displayBody, showOriginalBody, canCleanBody]);
 
   useEffect(() => {
     loadEmail();
@@ -759,7 +771,23 @@ export default function EmailDetail() {
           </div>
         )}
         <div className="email-body">
-          <pre className="email-body-text">{displayBody}</pre>
+          {readingBlocks ? (
+            <div className="email-reading-body">
+              {readingBlocks.map((block, i) =>
+                block.type === "list" ? (
+                  <ul key={i}>
+                    {block.items.map((item, j) => (
+                      <li key={j}>{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p key={i}>{block.text}</p>
+                )
+              )}
+            </div>
+          ) : (
+            <pre className="email-body-text">{displayBody}</pre>
+          )}
         </div>
       </article>
       </div>

@@ -28,12 +28,23 @@ const NOISY_PARAM_HINTS = [
   "od=",
   "user_id=",
   "campaign",
+  "campaign=",
   "utm_",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "ref=",
+  "source=",
+  "email=",
   "mc_cid",
   "mc_eid",
   "sfmc",
   "click_id",
+  "click_id=",
   "tracking",
+  "tracking=",
 ];
 
 // Encoded-URL fragments that mark a long redirect/wrapped link.
@@ -169,6 +180,17 @@ export function cleanEmailBody(body) {
 
   for (const rawLine of lines) {
     let line = rawLine.replace(/[ \t]+$/g, ""); // trim trailing whitespace
+
+    // Strip markdown / bracketed links so the readable label survives:
+    //   "plan [https://…utm_…]"      -> "plan"
+    //   "[Learn more](https://…)"    -> "Learn more"
+    line = line.replace(
+      /\[([^\]]+)\]\(\s*https?:\/\/[^)]*\)/gi,
+      (_m, label) => label
+    );
+    line = line.replace(/\[\s*https?:\/\/[^\]]*\]/gi, "");
+    line = line.replace(/[ \t]{2,}/g, " ").replace(/[ \t]+$/g, "");
+
     const lower = line.toLowerCase();
     const trimmed = line.trim();
 
@@ -259,4 +281,70 @@ export function bodyNeedsCleanup(body) {
     .replace(/\r\n/g, "\n")
     .replace(/[ \t]+$/gm, "");
   return cleaned !== normalizedOriginal;
+}
+
+/**
+ * Turn cleaned plain-text into display blocks for a readable reading view.
+ * Display-only; never used by AI actions.
+ *
+ * Block shapes:
+ *   { type: "paragraph", text: string }
+ *   { type: "list", items: string[] }
+ *
+ * Rules:
+ *  - Blank lines separate blocks.
+ *  - Consecutive "* ", "- " or "• " lines become one list block.
+ *  - Consecutive non-bullet lines in the same block are joined with a space
+ *    (fixes awkward hard-wrapped lines). Joining never crosses a blank line
+ *    or a bullet boundary.
+ *  - Returns [] if there's nothing to show (caller falls back to plain text).
+ *
+ * @param {string} text cleaned email body
+ * @returns {Array<{type:string,text?:string,items?:string[]}>}
+ */
+export function formatEmailBody(text) {
+  if (typeof text !== "string" || text.trim() === "") return [];
+
+  const lines = text.split(/\n/);
+  const blocks = [];
+  let para = [];
+  let list = [];
+
+  const flushPara = () => {
+    if (para.length) {
+      const joined = para.join(" ").replace(/\s{2,}/g, " ").trim();
+      if (joined) blocks.push({ type: "paragraph", text: joined });
+      para = [];
+    }
+  };
+  const flushList = () => {
+    if (list.length) {
+      blocks.push({ type: "list", items: list.slice() });
+      list = [];
+    }
+  };
+
+  const bulletRe = /^\s*[*\-•]\s+(.*)$/;
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (line === "") {
+      flushPara();
+      flushList();
+      continue;
+    }
+    const m = line.match(bulletRe);
+    if (m) {
+      flushPara();
+      const item = m[1].trim();
+      if (item) list.push(item);
+    } else {
+      flushList();
+      para.push(line);
+    }
+  }
+  flushPara();
+  flushList();
+
+  return blocks;
 }

@@ -1010,6 +1010,48 @@
   color: var(--text);
 }
 
+/* Cleaned "reading view" — formatted paragraphs and lists, article-like. */
+.email-reading-body {
+  max-width: 68ch;
+  color: var(--text);
+  font-size: 0.96rem;
+}
+
+.email-reading-body p {
+  margin: 0 0 0.85rem;
+  line-height: 1.65;
+  word-wrap: break-word;
+}
+
+.email-reading-body p:last-child {
+  margin-bottom: 0;
+}
+
+.email-reading-body ul {
+  margin: 0.4rem 0 0.95rem;
+  padding-left: 1.35rem;
+  list-style: disc;
+}
+
+.email-reading-body li {
+  margin: 0.2rem 0;
+  line-height: 1.55;
+  padding-left: 0.15rem;
+}
+
+.email-reading-body li::marker {
+  color: var(--text-faint);
+}
+
+@media (max-width: 480px) {
+  .email-reading-body {
+    font-size: 0.94rem;
+  }
+  .email-reading-body ul {
+    padding-left: 1.15rem;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* AI assistant panel — a side utility, not flashy cards               */
 /* ------------------------------------------------------------------ */
