@@ -4102,3 +4102,164 @@
   color: var(--text-faint);
   background: var(--surface-2);
 }
+
+/* --------------------------------------------------------------------- */
+/* Smart Action Queue (/actions) — a calm command list, not a dashboard  */
+/* --------------------------------------------------------------------- */
+.action-filter-bar {
+  margin-top: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.action-filter-count {
+  margin-left: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.filter-chip.active .action-filter-count {
+  opacity: 0.85;
+}
+
+.action-inbox-note {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+.action-queue {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 0.95rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Tiny, restrained overdue accent — the only place red appears. */
+.action-item.is-overdue {
+  border-left-color: var(--danger);
+}
+
+.action-item-body {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.action-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.action-type-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 1px 8px;
+}
+
+.action-type-label.type-inbox {
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-color: var(--primary-border);
+}
+
+.action-type-label.type-task,
+.action-type-label.type-deadline {
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-color: var(--warn-border);
+}
+
+.action-reason {
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.action-reason.is-overdue {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.action-date {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  margin-left: auto;
+}
+
+.action-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action-meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.76rem;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+}
+
+.action-primary-btn {
+  white-space: nowrap;
+}
+
+/* Workspace compact preview reuses ws-panel; the reason chip sits inline. */
+.ws-actions-preview .action-reason {
+  font-size: 0.72rem;
+}
+
+/* Mobile (~375px): stack the actions under the body so nothing clips. */
+@media (max-width: 480px) {
+  .action-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .action-item-actions {
+    justify-content: flex-start;
+  }
+
+  .action-date {
+    margin-left: 0;
+  }
+}

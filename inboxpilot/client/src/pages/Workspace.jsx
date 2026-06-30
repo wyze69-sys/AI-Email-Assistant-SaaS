@@ -10,6 +10,7 @@ import {
   updateTask,
   deriveFocusTasks,
 } from "../services/store.js";
+import { buildActionQueue } from "../services/actionsQueue.js";
 
 /**
  * Workspace Overview (frontend-only).
@@ -118,6 +119,16 @@ export default function Workspace() {
   );
 
   const focusTasks = useMemo(() => deriveFocusTasks(activeTasks, 5), [activeTasks]);
+
+  // Compact Action Queue preview. Workspace keeps its network-free contract,
+  // so this is built from local productivity signals only (tasks, deadlines,
+  // captures). The full /actions queue also folds in inbox triage. Because
+  // overdue/due-today tasks outrank everything, the most urgent items still
+  // surface here. `emails: []` is intentional.
+  const topActions = useMemo(
+    () => buildActionQueue({ emails: [], tasks, captures }, 5),
+    [tasks, captures]
+  );
 
   const upcomingDeadlines = useMemo(() => {
     // Active tasks that have a parseable date, soonest first (overdue/today
@@ -231,6 +242,51 @@ export default function Workspace() {
                   <span className="ws-summary-label">{card.label}</span>
                 </button>
               ))}
+            </div>
+          </section>
+
+          {/* Smart Action Queue preview */}
+          <section className="ws-section">
+            <div className="ws-panel ws-actions-preview">
+              <div className="ws-panel-head">
+                <h3>What to handle next</h3>
+                {topActions.length > 0 && (
+                  <span className="board-count">{topActions.length}</span>
+                )}
+              </div>
+              {topActions.length === 0 ? (
+                <p className="board-column-empty">
+                  Nothing urgent right now. Capture an idea or plan the day.
+                </p>
+              ) : (
+                <ul className="ws-list">
+                  {topActions.map((item) => (
+                    <li className="ws-list-item" key={item.id}>
+                      <span className="ws-list-text">{item.title}</span>
+                      <div className="ws-list-meta">
+                        <span className={`action-type-label type-${item.kind}`}>
+                          {item.typeLabel}
+                        </span>
+                        <span
+                          className={`action-reason ${
+                            item.isOverdue ? "is-overdue" : ""
+                          }`}
+                        >
+                          {item.reason}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="ws-panel-actions">
+                <button
+                  className="btn-chip"
+                  onClick={() => navigate("/actions")}
+                >
+                  Open Action Queue
+                </button>
+              </div>
             </div>
           </section>
 

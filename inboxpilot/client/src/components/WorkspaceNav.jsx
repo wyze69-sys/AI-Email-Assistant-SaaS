@@ -7,6 +7,7 @@ import { NavLink } from "react-router-dom";
  */
 const LINKS = [
   { to: "/workspace", label: "Workspace" },
+  { to: "/actions", label: "Actions" },
   { to: "/dashboard", label: "Inbox" },
   { to: "/capture", label: "Capture" },
   { to: "/search", label: "Search" },

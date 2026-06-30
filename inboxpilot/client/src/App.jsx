@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { captureTokenFromURL, isAuthenticated } from "./services/auth.js";
 import Login from "./pages/Login.jsx";
 import Workspace from "./pages/Workspace.jsx";
+import Actions from "./pages/Actions.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import EmailDetail from "./pages/EmailDetail.jsx";
 import Search from "./pages/Search.jsx";
@@ -39,6 +40,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Workspace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/actions"
+          element={
+            <ProtectedRoute>
+              <Actions />
             </ProtectedRoute>
           }
         />
