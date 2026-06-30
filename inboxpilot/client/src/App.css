@@ -327,7 +327,7 @@
 /* App shell / Dashboard — an inbox command center                     */
 /* ------------------------------------------------------------------ */
 .dashboard {
-  max-width: var(--content-width);
+  max-width: 1280px;
   margin: 0 auto;
   padding: 0 1.25rem 4rem;
 }
@@ -690,6 +690,16 @@
   color: var(--text);
 }
 
+/* Active selection in the split-pane inbox — quiet, document-like accent */
+.email-item.selected {
+  background: var(--primary-soft);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.email-item.selected:hover {
+  background: var(--primary-soft);
+}
+
 .email-item-header {
   grid-area: from;
   display: contents;
@@ -850,6 +860,160 @@
 .btn-load-more:hover {
   border-color: var(--primary);
   color: var(--primary);
+}
+
+/* ------------------------------------------------------------------ */
+/* Split-pane inbox — email list (left) + reading/action panel (right) */
+/* ------------------------------------------------------------------ */
+.inbox-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 40%);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.inbox-list-pane {
+  min-width: 0;
+}
+
+/* The reading panel reads like a quiet document and follows on scroll */
+.inbox-preview {
+  position: sticky;
+  top: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.4rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: calc(100vh - 2.5rem);
+  overflow-y: auto;
+}
+
+/* Empty state before any selection */
+.inbox-preview-empty {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 260px;
+}
+
+.inbox-preview-empty-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--text-faint);
+}
+
+.inbox-preview-empty-icon {
+  display: inline-flex;
+  color: var(--text-faint);
+  opacity: 0.7;
+}
+
+.inbox-preview-empty p {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.inbox-preview-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+}
+
+.inbox-preview-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.inbox-preview-from {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.inbox-preview-date {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.inbox-preview-subject {
+  font-size: 1.05rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.inbox-preview-triage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.inbox-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+
+/* Compact button variant used inside the preview action row */
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.inbox-preview-body {
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.inbox-preview-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0 0 0.5rem;
+}
+
+.inbox-preview-muted {
+  color: var(--text-faint);
+}
+
+.inbox-preview-ai {
+  border-top: 1px solid var(--border);
+  padding-top: 0.9rem;
+}
+
+@media (max-width: 920px) {
+  /* Stack: inbox list first, reading/action panel below it */
+  .inbox-split {
+    grid-template-columns: 1fr;
+  }
+
+  .inbox-preview {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .inbox-preview-empty {
+    min-height: 160px;
+  }
 }
 
 /* ------------------------------------------------------------------ */

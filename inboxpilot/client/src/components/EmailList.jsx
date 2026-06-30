@@ -7,6 +7,7 @@ export default function EmailList({
   activeQuery = "",
   onClearSearch,
   triageMap = {},
+  selectedId = null,
 }) {
   // Initial load — show skeleton placeholders
   if (loading && emails.length === 0) {
@@ -76,12 +77,16 @@ export default function EmailList({
     <ul className="email-list">
       {emails.map((email) => {
         const triage = triageMap[email.id];
+        const isSelected = selectedId === email.id;
         return (
           <li
             key={email.id}
-            className={`email-item ${email.isUnread ? "unread" : ""}`}
+            className={`email-item ${email.isUnread ? "unread" : ""} ${
+              isSelected ? "selected" : ""
+            }`}
             role="button"
             tabIndex={0}
+            aria-current={isSelected ? "true" : undefined}
             aria-label={`Open email from ${formatFrom(email.from)}: ${
               email.subject || "no subject"
             }${email.isUnread ? " (unread)" : ""}`}

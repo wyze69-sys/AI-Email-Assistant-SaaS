@@ -5,6 +5,7 @@ import { fetchEmails } from "../services/emails.js";
 import { friendlyError } from "../services/ui.js";
 import { triageEmail, TRIAGE_FILTERS } from "../services/triage.js";
 import EmailList from "../components/EmailList.jsx";
+import EmailPreview from "../components/EmailPreview.jsx";
 import WorkspaceNav from "../components/WorkspaceNav.jsx";
 
 // Quick inbox filters — map to Gmail search operators the existing
@@ -33,6 +34,10 @@ export default function Dashboard() {
   // Client-side triage filter — completely separate from the Gmail-query
   // FILTERS above. Selecting one never re-queries Gmail (no loadEmails call).
   const [activeTriageFilter, setActiveTriageFilter] = useState("all");
+
+  // Split-pane selection: the email id shown in the right reading panel.
+  // null = nothing selected yet (right panel shows its empty state).
+  const [selectedId, setSelectedId] = useState(null);
 
   // Compute triage once per loaded email; recompute only when `emails` change.
   const triageMap = useMemo(() => {
@@ -118,6 +123,7 @@ export default function Dashboard() {
     e.preventDefault();
     if (emailsLoading) return; // prevent duplicate submits while loading
     setActiveFilter(null); // manual search → no chip is active
+    setSelectedId(null); // new result set → clear stale preview selection
     setEmails([]);
     setNextPageToken(null);
     setActiveQuery(searchQuery.trim());
@@ -129,6 +135,7 @@ export default function Dashboard() {
     setSearchQuery("");
     setActiveQuery("");
     setActiveFilter("all"); // clearing returns to the default inbox view
+    setSelectedId(null);
     setEmails([]);
     setNextPageToken(null);
     loadEmails(null, "");
@@ -141,6 +148,7 @@ export default function Dashboard() {
     setSearchQuery(""); // chips drive the view, so clear the typed query
     setActiveFilter(filter.id);
     setActiveQuery(filter.query);
+    setSelectedId(null);
     setEmails([]);
     setNextPageToken(null);
     loadEmails(null, filter.query);
@@ -153,6 +161,19 @@ export default function Dashboard() {
   }
 
   function handleEmailClick(emailId) {
+    setSelectedId(emailId);
+    // On narrow screens the preview renders below the list — bring it into
+    // view so the selection feels responsive without manual scrolling.
+    if (typeof window !== "undefined" && window.innerWidth <= 920) {
+      requestAnimationFrame(() => {
+        document
+          .querySelector(".inbox-preview")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }
+
+  function handleOpenFull(emailId) {
     navigate(`/emails/${emailId}`);
   }
 
@@ -182,6 +203,12 @@ export default function Dashboard() {
 
   const initial = (user?.name || user?.email || "?").charAt(0).toUpperCase();
   const gmailConnected = Boolean(user?.gmailConnected);
+  // The list row backing the current selection (instant header for the
+  // preview before the full body finishes loading). Looked up from the full
+  // loaded set so it survives triage-filter changes.
+  const selectedItem = selectedId
+    ? emails.find((e) => e.id === selectedId) || null
+    : null;
 
   return (
     <div className="dashboard">
@@ -275,6 +302,8 @@ export default function Dashboard() {
         {/* Email section */}
         {gmailConnected && (
           <section className="emails-section enter-3">
+            <div className="inbox-split">
+            <div className="inbox-list-pane">
             <form className="search-bar" onSubmit={handleSearch}>
               <div className="search-input-wrap">
                 <svg
@@ -398,6 +427,7 @@ export default function Dashboard() {
                 activeQuery={activeFilter ? "" : activeQuery}
                 onClearSearch={handleClearSearch}
                 triageMap={triageMap}
+                selectedId={selectedId}
               />
             )}
 
@@ -416,6 +446,9 @@ export default function Dashboard() {
                 )}
               </button>
             )}
+            </div>
+            <EmailPreview emailItem={selectedItem} onOpenFull={handleOpenFull} />
+            </div>
           </section>
         )}
       </main>
