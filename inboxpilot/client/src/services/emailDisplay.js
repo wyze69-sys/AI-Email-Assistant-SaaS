@@ -348,3 +348,693 @@ export function formatEmailBody(text) {
 
   return blocks;
 }
+
+/* ================================================================== */
+/* Universal Email Reading View                                        */
+/* ------------------------------------------------------------------ */
+/* A display-only pipeline:                                            */
+/*   detect intent → classify links → render readable blocks.          */
+/*                                                                     */
+/* Everything here is read-only and provider-agnostic. It NEVER        */
+/* mutates the email and is NEVER used by AI actions or "Show          */
+/* original" — those always read the untouched `email.body`. Input is  */
+/* treated strictly as plain text, so no HTML/markup is parsed or      */
+/* executed. Links are only ever surfaced as data (href + domain) for  */
+/* the UI to render with a safe <a target="_blank" rel="noreferrer">.  */
+/* ================================================================== */
+
+// --- Intent phrase dictionaries -------------------------------------
+
+// Clearly-transactional action phrases (rare in marketing email).
+const STRONG_ACTION_PHRASES = [
+  "verify email",
+  "verify your email",
+  "confirm email",
+  "confirm your email",
+  "confirm account",
+  "confirm your account",
+  "activate account",
+  "activate your account",
+  "create password",
+  "set password",
+  "set your password",
+  "reset password",
+  "reset your password",
+  "forgot password",
+  "accept invitation",
+  "join workspace",
+  "complete registration",
+  "continue registration",
+  "account setup",
+  "finish setting up",
+];
+
+// Weaker action phrases — also appear in marketing, so lower priority.
+const WEAK_ACTION_PHRASES = [
+  "login",
+  "log in",
+  "sign in",
+  "open document",
+  "view document",
+  "download file",
+  "follow the link below",
+  "follow the link",
+  "click the link",
+  "link expires",
+  "expires in",
+  "valid for",
+];
+
+const SECURITY_PHRASES = [
+  "verification code",
+  "security code",
+  "authentication code",
+  "confirmation code",
+  "one-time code",
+  "one time code",
+  "passcode",
+  "2fa",
+  "two-factor",
+  "two factor",
+  "login attempt",
+  "log-in attempt",
+  "new sign-in",
+  "new sign in",
+  "password changed",
+  "password was changed",
+  "suspicious activity",
+  "unusual activity",
+];
+
+const RECEIPT_PHRASES = [
+  "receipt",
+  "invoice",
+  "order confirmation",
+  "your order",
+  "payment",
+  "paid",
+  "transaction",
+  "shipped",
+  "has shipped",
+  "delivery",
+  "out for delivery",
+  "tracking number",
+  "track your",
+  "booking",
+  "reservation",
+  "subscription",
+];
+
+const MARKETING_PHRASES = [
+  "unsubscribe",
+  "manage preferences",
+  "manage your preferences",
+  "update preferences",
+  "update your preferences",
+  "view this email in your browser",
+  "view in browser",
+  "newsletter",
+  "digest",
+  "sale",
+  "offer",
+  "discount",
+  "promotion",
+  "promo",
+  "utm_",
+];
+
+// --- Link classification dictionaries -------------------------------
+
+const ACTION_CONTEXT_PHRASES = [
+  "follow the link",
+  "click the link",
+  "click here",
+  "create password",
+  "set password",
+  "reset password",
+  "forgot password",
+  "verify",
+  "confirm",
+  "activate",
+  "login",
+  "log in",
+  "sign in",
+  "register",
+  "registration",
+  "invitation",
+  "invite",
+  "view order",
+  "your order",
+  "track package",
+  "track your",
+  "download invoice",
+  "download",
+  "open document",
+  "view document",
+  "join meeting",
+  "join workspace",
+];
+
+const ACTION_URL_TOKENS = [
+  "token",
+  "code",
+  "reset",
+  "verify",
+  "verification",
+  "auth",
+  "oauth",
+  "login",
+  "signin",
+  "invitation",
+  "invite",
+  "download",
+  "invoice",
+  "order",
+  "tracking",
+  "track",
+  "checkout",
+  "payment",
+  "confirm",
+  "activate",
+];
+
+const TRACKING_URL_TOKENS = [
+  "utm_",
+  "mc_cid",
+  "mc_eid",
+  "sfmc",
+  "click.sfmc",
+  "/email/click",
+  "/click",
+  "/track",
+  "/tracking",
+  "/redirect",
+  "click.track",
+  "list-manage.com",
+  "mailchi.mp",
+  "sendgrid.net",
+  "target=",
+  "redirect=",
+  "qs=",
+  "user_id=",
+  "campaign=",
+];
+
+const FOOTER_CONTEXT_PHRASES = [
+  "unsubscribe",
+  "manage preferences",
+  "manage your preferences",
+  "update preferences",
+  "update your preferences",
+  "privacy policy",
+  "terms of service",
+  "terms of use",
+  "help center",
+  "help centre",
+  "contact us",
+  "view online",
+  "view in browser",
+  "view this email in your browser",
+];
+
+const USEFUL_CONTEXT_PHRASES = [
+  "article",
+  "read more",
+  "learn more",
+  "documentation",
+  "docs",
+  "resource",
+  "document",
+  "guide",
+  "tutorial",
+  "blog",
+  "watch",
+];
+
+const CODE_PHRASES = [
+  "verification code",
+  "security code",
+  "authentication code",
+  "confirmation code",
+  "one-time code",
+  "one time code",
+  "login code",
+  "access code",
+  "your code",
+  "use this code",
+  "otp",
+  "passcode",
+  "2fa",
+  "two-factor",
+  "two factor",
+];
+
+const SIGNOFF_WORDS = [
+  "thanks",
+  "thank you",
+  "regards",
+  "best",
+  "cheers",
+  "sincerely",
+  "warmly",
+  "yours",
+  "best regards",
+  "kind regards",
+];
+
+// --- Small helpers --------------------------------------------------
+
+/** Hostname without a leading "www.", with a safe fallback parse. */
+function getDomain(href) {
+  try {
+    const u = new URL(href);
+    return u.hostname.replace(/^www\./i, "");
+  } catch {
+    const m = href.match(/^https?:\/\/([^/?#]+)/i);
+    return m ? m[1].replace(/^www\./i, "") : href;
+  }
+}
+
+/** Tracking / redirect link heuristic (intent-aware for the length rule). */
+function isTrackingUrl(url, intent) {
+  const lower = url.toLowerCase();
+  if (TRACKING_URL_TOKENS.some((t) => lower.includes(t))) return true;
+  if (url.length > 120 && intent === "marketing") return true;
+  return false;
+}
+
+/**
+ * Detect the email's intent from subject + snippet + body.
+ * Precedence is tuned so transactional/security mail is never mistaken
+ * for marketing, while heavy newsletter signals still win over weak
+ * "sign in" style phrases.
+ */
+export function detectEmailIntent({ subject = "", snippet = "", body = "" } = {}) {
+  const hay = `${subject}\n${snippet}\n${body}`.toLowerCase();
+  const has = (arr) => arr.some((p) => hay.includes(p));
+
+  const securityHit = has(SECURITY_PHRASES);
+  const strongActionHit = has(STRONG_ACTION_PHRASES);
+  const weakActionHit = has(WEAK_ACTION_PHRASES);
+  const receiptHit = has(RECEIPT_PHRASES);
+  const marketingHit = has(MARKETING_PHRASES);
+
+  const urls = findUrls(body || "");
+  const trackingCount = urls.filter((u) => isTrackingUrl(u, "marketing")).length;
+  const strongMarketing =
+    marketingHit && (hay.includes("unsubscribe") || trackingCount >= 3);
+
+  if (securityHit) return "security";
+  if (strongActionHit) return "action";
+  if (receiptHit) return "receipt";
+  if (strongMarketing) return "marketing";
+  if (weakActionHit) return "action";
+  if (marketingHit) return "marketing";
+
+  // Personal heuristic: few links, no marketing/footer/tracking signals.
+  const linkCount = urls.length;
+  const noFooter = !FOOTER_CONTEXT_PHRASES.some((p) => hay.includes(p));
+  const noTracking = trackingCount === 0;
+  if (linkCount <= 3 && noFooter && noTracking) return "personal";
+
+  return "unknown";
+}
+
+/**
+ * Extract every link from a single line (markdown, bracketed, standalone)
+ * and return the line text with the links removed. Markdown/anchor labels
+ * are preserved on the link object so a button can reuse them, but they are
+ * stripped from the text to avoid duplicating the button label inline.
+ */
+function extractLineLinks(line) {
+  const links = [];
+  let work = line;
+
+  // Markdown links: [label](https://…)
+  work = work.replace(
+    /\[([^\]]+)\]\(\s*(https?:\/\/[^)\s]+)\s*\)/gi,
+    (_m, label, url) => {
+      links.push({ href: url, label: label.trim() });
+      return " ";
+    }
+  );
+
+  // Bracketed bare URL: [https://…]
+  work = work.replace(/\[\s*(https?:\/\/[^\]\s]+)\s*\]/gi, (_m, url) => {
+    links.push({ href: url, label: "" });
+    return " ";
+  });
+
+  // Standalone URLs
+  work = work.replace(URL_REGEX, (m) => {
+    links.push({ href: m, label: "" });
+    return " ";
+  });
+  URL_REGEX.lastIndex = 0;
+
+  const text = work.replace(/[ \t]{2,}/g, " ").trim();
+  return { text, links };
+}
+
+/**
+ * Classify a single URL given its surrounding context and the email intent.
+ * @returns {"action"|"tracking"|"footer"|"useful"|"unknown"}
+ */
+function classifyLink(href, context, intent) {
+  const ctx = context.toLowerCase();
+  const lower = href.toLowerCase();
+
+  const footer = FOOTER_CONTEXT_PHRASES.some((p) => ctx.includes(p));
+  const actionCtx = ACTION_CONTEXT_PHRASES.some((p) => ctx.includes(p));
+  const actionUrl = ACTION_URL_TOKENS.some((t) => lower.includes(t));
+  const tracking = isTrackingUrl(href, intent);
+
+  const actionable =
+    intent === "action" || intent === "security" || intent === "receipt";
+
+  if (actionable && !footer && (actionCtx || actionUrl)) return "action";
+  if (footer) return "footer";
+  if (tracking) return "tracking";
+
+  if (href.length <= 100) {
+    if (USEFUL_CONTEXT_PHRASES.some((p) => ctx.includes(p))) return "useful";
+    if (href.length <= 60) return "useful";
+  }
+  return "unknown";
+}
+
+/** Choose a human label for an action button from context + URL. */
+function deriveActionLabel(href, context) {
+  const s = `${context} ${href}`.toLowerCase();
+  if (s.includes("reset password") || (s.includes("reset") && s.includes("password")))
+    return "Reset password";
+  if (s.includes("create password") || s.includes("set password") || s.includes("forgot password") || (s.includes("create") && s.includes("password")) || (s.includes("set") && s.includes("password")))
+    return "Create password";
+  if (
+    s.includes("verify") ||
+    s.includes("verification") ||
+    s.includes("confirm email") ||
+    s.includes("confirm account") ||
+    s.includes("activate")
+  )
+    return "Verify email";
+  if (s.includes("invitation") || s.includes("invite") || s.includes("join workspace"))
+    return "Accept invitation";
+  if (s.includes("track")) return "Track package";
+  if (s.includes("invoice")) return "Download invoice";
+  if (s.includes("view order") || s.includes("your order") || s.includes("order"))
+    return "View order";
+  if (s.includes("download")) return "Download file";
+  if (s.includes("document")) return "Open document";
+  if (s.includes("meeting")) return "Join meeting";
+  if (s.includes("login") || s.includes("log in") || s.includes("sign in") || s.includes("register"))
+    return "Open secure link";
+  return "Open secure link";
+}
+
+/** Find a standalone verification-code-like token on a line. */
+function findCodeToken(line) {
+  const digit = line.match(/(?:^|[^\w])(\d{4,8})(?:[^\w]|$)/);
+  if (digit) return digit[1];
+  const alnum = line.match(/(?:^|[^\w])([A-Z0-9]{4,8})(?:[^\w]|$)/);
+  if (alnum && /\d/.test(alnum[1]) && /[A-Z]/.test(alnum[1])) return alnum[1];
+  return null;
+}
+
+/**
+ * Locate a verification/security code near a code phrase.
+ * @returns {{value:string,label:string,lineIndex:number}|null}
+ */
+function detectVerificationCode(lines, intent) {
+  const lowerJoin = lines.join("\n").toLowerCase();
+  const hasPhrase = CODE_PHRASES.some((p) => lowerJoin.includes(p));
+  if (!hasPhrase && intent !== "security") return null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const phraseHere = CODE_PHRASES.some((p) =>
+      lines[i].toLowerCase().includes(p)
+    );
+    for (let j = i; j <= i + 2 && j < lines.length; j++) {
+      const candidate = findCodeToken(lines[j]);
+      const phraseNear =
+        phraseHere || CODE_PHRASES.some((p) => lines[j].toLowerCase().includes(p));
+      if (candidate && phraseNear) {
+        return { value: candidate, label: "Verification code", lineIndex: j };
+      }
+    }
+  }
+  return null;
+}
+
+/** Heading heuristic for structured (non-personal) mail only. */
+function isHeadingLine(paraLines, intent) {
+  if (paraLines.length !== 1) return false;
+  if (!["marketing", "receipt", "unknown"].includes(intent)) return false;
+  const t = paraLines[0].trim();
+  if (t.length === 0 || t.length > 55) return false;
+  if (/[.!?,;:]$/.test(t)) return false;
+  if (t.split(/\s+/).length > 8) return false;
+  const lt = t.toLowerCase();
+  if (SIGNOFF_WORDS.some((s) => lt.startsWith(s))) return false;
+  return true;
+}
+
+/**
+ * Build a universal, display-only reading view for an email.
+ *
+ * @param {object|string} input email object (uses body/subject/snippet) or a
+ *                               raw body string.
+ * @returns {{
+ *   intent: "action"|"marketing"|"receipt"|"security"|"personal"|"unknown",
+ *   cleanedText: string,
+ *   blocks: Array<object>,
+ *   hiddenLinkCount: number,
+ *   preservedLinkCount: number
+ * }}
+ */
+export function prepareEmailReadingView(input) {
+  const email = typeof input === "string" ? { body: input } : input || {};
+  const body = typeof email.body === "string" ? email.body : "";
+  const subject = typeof email.subject === "string" ? email.subject : "";
+  const snippet = typeof email.snippet === "string" ? email.snippet : "";
+
+  const intent = detectEmailIntent({ subject, snippet, body });
+
+  if (!body) {
+    return {
+      intent,
+      cleanedText: "",
+      blocks: [],
+      hiddenLinkCount: 0,
+      preservedLinkCount: 0,
+    };
+  }
+
+  const rawLines = body.split(/\r?\n/);
+  const codeInfo = detectVerificationCode(rawLines, intent);
+
+  const items = [];
+  let hiddenLinkCount = 0;
+  let preservedLinkCount = 0;
+  const keptHrefs = new Set();
+  let marketingUsefulUsed = false;
+  const recentText = [];
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const raw = rawLines[i].replace(/[ \t]+$/g, "");
+    const trimmedRaw = raw.trim();
+
+    if (trimmedRaw === "") {
+      items.push({ t: "blank" });
+      continue;
+    }
+    if (includesAny(raw.toLowerCase(), BROWSER_FALLBACK_PHRASES)) continue;
+
+    const { text, links } = extractLineLinks(raw);
+    const context = `${recentText.slice(-2).join(" ")} ${text}`;
+    // Tighter context (nearest preceding line only) for choosing a button
+    // label, so a previous CTA line ("Track package:") doesn't bleed into the
+    // next link's label ("View order details:").
+    const nearContext = `${recentText.slice(-1).join(" ")} ${text}`;
+
+    // Classify and surface links for this line.
+    for (const link of links) {
+      const kind = classifyLink(
+        link.href,
+        `${context} ${link.label || ""}`,
+        intent
+      );
+
+      let keep = false;
+      let blockKind = null;
+      if (kind === "action") {
+        keep = true;
+        blockKind = "action";
+      } else if (kind === "useful") {
+        if (intent === "marketing") {
+          if (!marketingUsefulUsed) {
+            keep = true;
+            blockKind = "useful";
+            marketingUsefulUsed = true;
+          }
+        } else {
+          keep = true;
+          blockKind = "useful";
+        }
+      } else if (kind === "unknown") {
+        if (
+          (intent === "personal" || intent === "unknown") &&
+          link.href.length <= 70
+        ) {
+          keep = true;
+          blockKind = "useful";
+        }
+      }
+
+      if (!keep) {
+        hiddenLinkCount += 1;
+        continue;
+      }
+      if (keptHrefs.has(link.href)) continue; // dedupe identical URLs
+      keptHrefs.add(link.href);
+      preservedLinkCount += 1;
+
+      const domain = getDomain(link.href);
+      const label =
+        blockKind === "action"
+          ? deriveActionLabel(link.href, `${nearContext} ${link.label || ""}`)
+          : link.label && link.label.length <= 40 && !/^https?:/i.test(link.label)
+          ? link.label
+          : `Open ${domain}`;
+      const reason =
+        blockKind === "action" && /expire|expires|valid for/i.test(context)
+          ? "This secure link may expire soon."
+          : undefined;
+
+      items.push({
+        t: "link",
+        block: {
+          type: "actionLink",
+          label,
+          href: link.href,
+          domain,
+          ...(reason ? { reason } : {}),
+        },
+      });
+    }
+
+    // Surface readable text (dropping footer / fragment noise).
+    if (text) {
+      const lt = text.toLowerCase();
+      const isFooter = includesAny(lt, FOOTER_PHRASES);
+      const isWeakFooter = includesAny(lt, WEAK_FOOTER_PHRASES) && text.length < 40;
+      const isFragment = looksLikeUrlFragment(text);
+
+      if (!isFooter && !isWeakFooter && !isFragment) {
+        if (codeInfo && i === codeInfo.lineIndex) {
+          const stripped = trimLabel(
+            text.replace(codeInfo.value, "").replace(/[ \t]{2,}/g, " ").trim()
+          );
+          if (stripped && meaningfulLength(stripped) > 2) {
+            items.push({ t: "text", text: stripped });
+            recentText.push(stripped);
+          }
+        } else {
+          items.push({ t: "text", text });
+          recentText.push(text);
+        }
+      }
+    }
+
+    // Emit the detected code block right after its source line.
+    if (codeInfo && i === codeInfo.lineIndex) {
+      items.push({
+        t: "code",
+        block: { type: "code", text: codeInfo.value, label: codeInfo.label },
+      });
+    }
+  }
+
+  // Group consecutive text into paragraph / heading / list blocks, keeping
+  // link and code blocks in their original position.
+  const blocks = [];
+  let para = [];
+  let list = [];
+  const bulletRe = /^\s*(?:[*\-•]|\d+[.)])\s+(.*)$/;
+
+  const flushPara = () => {
+    if (para.length) {
+      const joined = para.join(" ").replace(/\s{2,}/g, " ").trim();
+      if (joined) {
+        blocks.push(
+          isHeadingLine(para, intent)
+            ? { type: "heading", text: joined }
+            : { type: "paragraph", text: joined }
+        );
+      }
+      para = [];
+    }
+  };
+  const flushList = () => {
+    if (list.length) {
+      blocks.push({ type: "list", items: list.slice() });
+      list = [];
+    }
+  };
+
+  for (const it of items) {
+    if (it.t === "blank") {
+      flushPara();
+      flushList();
+      continue;
+    }
+    if (it.t === "link" || it.t === "code") {
+      flushPara();
+      flushList();
+      blocks.push(it.block);
+      continue;
+    }
+    const m = it.text.match(bulletRe);
+    if (m) {
+      flushPara();
+      const item = m[1].trim();
+      if (item) list.push(item);
+    } else {
+      flushList();
+      para.push(it.text);
+    }
+  }
+  flushPara();
+  flushList();
+
+  const cleanedText = blocks
+    .map((b) => {
+      if (b.type === "heading" || b.type === "paragraph") return b.text;
+      if (b.type === "list") return b.items.map((x) => `- ${x}`).join("\n");
+      if (b.type === "actionLink") return `${b.label} (${b.domain})`;
+      if (b.type === "code") return `${b.label || "Code"}: ${b.text}`;
+      return "";
+    })
+    .filter(Boolean)
+    .join("\n\n");
+
+  return { intent, cleanedText, blocks, hiddenLinkCount, preservedLinkCount };
+}
+
+/** Friendly label for an intent, or null when not worth showing. */
+export function intentLabel(intent) {
+  switch (intent) {
+    case "action":
+      return "Action email";
+    case "security":
+      return "Security email";
+    case "receipt":
+      return "Receipt";
+    case "marketing":
+      return "Newsletter";
+    case "personal":
+      return "Personal email";
+    default:
+      return null;
+  }
+}

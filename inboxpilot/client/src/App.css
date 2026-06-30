@@ -1043,12 +1043,133 @@
   color: var(--text-faint);
 }
 
+/* Reading-view headings — quiet, document-like section labels. */
+.email-reading-heading {
+  margin: 1.1rem 0 0.55rem;
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.email-reading-heading:first-child {
+  margin-top: 0;
+}
+
+/* Reading-view toolbar metadata (title + intent tag). */
+.email-clean-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.email-clean-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.email-intent-tag {
+  padding: 1px 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-faint);
+}
+
+.email-hidden-count {
+  color: var(--text-faint);
+}
+
+/* Action link — a calm, tappable card/button (display only, opens in tab). */
+.email-action-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 28rem;
+  margin: 0.6rem 0 0.95rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.email-action-link:hover {
+  background: var(--surface-3);
+  border-color: var(--primary);
+  text-decoration: none;
+}
+
+.email-action-link-label {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.email-action-link-domain {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  word-break: break-all;
+}
+
+.email-action-link-reason {
+  margin-top: 2px;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+/* Verification / security code — highlighted, easy to read and copy by eye. */
+.email-code-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 18rem;
+  margin: 0.7rem 0 1rem;
+  padding: 0.8rem 1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.email-code-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.email-code-value {
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--text);
+}
+
 @media (max-width: 480px) {
   .email-reading-body {
     font-size: 0.94rem;
   }
   .email-reading-body ul {
     padding-left: 1.15rem;
+  }
+  .email-action-link,
+  .email-code-block {
+    max-width: 100%;
+  }
+  .email-code-value {
+    font-size: 1.3rem;
+    letter-spacing: 0.14em;
   }
 }
 

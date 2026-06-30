@@ -8,7 +8,7 @@ import {
   reviewEmailPriority,
 } from "../services/ai.js";
 import { triageEmail, DISPLAY_LABELS } from "../services/triage.js";
-import { cleanEmailBody, bodyNeedsCleanup, formatEmailBody } from "../services/emailDisplay.js";
+import { prepareEmailReadingView, intentLabel } from "../services/emailDisplay.js";
 import {
   friendlyError,
   copyToClipboard,
@@ -70,28 +70,23 @@ export default function EmailDetail() {
   // body is always preserved on `email.body` and is what AI actions use.
   const [showOriginalBody, setShowOriginalBody] = useState(false);
 
-  const canCleanBody = useMemo(
-    () => (email ? bodyNeedsCleanup(email.body) : false),
-    [email]
-  );
-
-  const displayBody = useMemo(() => {
-    if (!email) return "";
-    if (showOriginalBody || !canCleanBody) return email.body;
-    return cleanEmailBody(email.body);
-  }, [email, showOriginalBody, canCleanBody]);
-
-  // Reading-view blocks for the cleaned view (display-only). Null when showing
-  // the original raw body, so we render the exact <pre> instead.
-  const readingBlocks = useMemo(() => {
-    if (showOriginalBody || !canCleanBody) return null;
+  // Universal reading view: detect intent → classify links → readable blocks.
+  // Pure, display-only, never mutates the email and never feeds AI actions.
+  const readingView = useMemo(() => {
+    if (!email) return null;
     try {
-      const blocks = formatEmailBody(displayBody);
-      return blocks.length > 0 ? blocks : null;
+      return prepareEmailReadingView(email);
     } catch {
-      return null; // fall back to plain text on any formatting error
+      return null; // any failure falls back to the raw body view
     }
-  }, [displayBody, showOriginalBody, canCleanBody]);
+  }, [email]);
+
+  // Only offer the cleaned view / toggle when it produced readable blocks.
+  const canCleanBody = Boolean(readingView && readingView.blocks.length > 0);
+
+  // Blocks for the cleaned reading view. Null when showing the raw original.
+  const readingBlocks =
+    !showOriginalBody && canCleanBody ? readingView.blocks : null;
 
   useEffect(() => {
     loadEmail();
@@ -756,10 +751,29 @@ export default function EmailDetail() {
       <article className="email-content email-sheet enter-1">
         {canCleanBody && (
           <div className="email-body-toolbar">
-            <p className="email-clean-note">
-              Cleaned view hides tracking links and footer clutter. AI tools
-              still use the original email.
-            </p>
+            <div className="email-clean-meta">
+              <p className="email-clean-title">
+                {showOriginalBody ? "Original email" : "Cleaned reading view"}
+                {!showOriginalBody && readingView && intentLabel(readingView.intent) && (
+                  <span className="email-intent-tag">
+                    {intentLabel(readingView.intent)}
+                  </span>
+                )}
+              </p>
+              <p className="email-clean-note">
+                Cleaned view hides tracking clutter and turns important links
+                into safe action buttons. AI tools still use the original email.
+                {!showOriginalBody &&
+                  readingView &&
+                  readingView.hiddenLinkCount > 0 && (
+                    <span className="email-hidden-count">
+                      {" "}
+                      {readingView.hiddenLinkCount} tracking/footer link
+                      {readingView.hiddenLinkCount === 1 ? "" : "s"} hidden.
+                    </span>
+                  )}
+              </p>
+            </div>
             <button
               type="button"
               className="btn-link-quiet"
@@ -773,20 +787,62 @@ export default function EmailDetail() {
         <div className="email-body">
           {readingBlocks ? (
             <div className="email-reading-body">
-              {readingBlocks.map((block, i) =>
-                block.type === "list" ? (
-                  <ul key={i}>
-                    {block.items.map((item, j) => (
-                      <li key={j}>{item}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p key={i}>{block.text}</p>
-                )
-              )}
+              {readingBlocks.map((block, i) => {
+                switch (block.type) {
+                  case "heading":
+                    return (
+                      <h3 key={i} className="email-reading-heading">
+                        {block.text}
+                      </h3>
+                    );
+                  case "list":
+                    return (
+                      <ul key={i}>
+                        {block.items.map((item, j) => (
+                          <li key={j}>{item}</li>
+                        ))}
+                      </ul>
+                    );
+                  case "actionLink":
+                    return (
+                      <a
+                        key={i}
+                        className="email-action-link"
+                        href={block.href}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <span className="email-action-link-label">
+                          {block.label}
+                        </span>
+                        <span className="email-action-link-domain">
+                          {block.domain}
+                        </span>
+                        {block.reason && (
+                          <span className="email-action-link-reason">
+                            {block.reason}
+                          </span>
+                        )}
+                      </a>
+                    );
+                  case "code":
+                    return (
+                      <div key={i} className="email-code-block">
+                        {block.label && (
+                          <span className="email-code-label">{block.label}</span>
+                        )}
+                        <span className="email-code-value">{block.text}</span>
+                      </div>
+                    );
+                  default:
+                    return (
+                      <p key={i}>{block.text}</p>
+                    );
+                }
+              })}
             </div>
           ) : (
-            <pre className="email-body-text">{displayBody}</pre>
+            <pre className="email-body-text">{email.body}</pre>
           )}
         </div>
       </article>
