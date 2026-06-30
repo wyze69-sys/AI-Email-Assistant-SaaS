@@ -8,6 +8,7 @@ import {
   reviewEmailPriority,
 } from "../services/ai.js";
 import { triageEmail, DISPLAY_LABELS } from "../services/triage.js";
+import { cleanEmailBody, bodyNeedsCleanup } from "../services/emailDisplay.js";
 import {
   friendlyError,
   copyToClipboard,
@@ -65,6 +66,21 @@ export default function EmailDetail() {
   // Guarded at the top level so the hook is never called conditionally.
   const triage = useMemo(() => (email ? triageEmail(email) : null), [email]);
 
+  // Display-only body cleanup. Defaults to the cleaned view. The original
+  // body is always preserved on `email.body` and is what AI actions use.
+  const [showOriginalBody, setShowOriginalBody] = useState(false);
+
+  const canCleanBody = useMemo(
+    () => (email ? bodyNeedsCleanup(email.body) : false),
+    [email]
+  );
+
+  const displayBody = useMemo(() => {
+    if (!email) return "";
+    if (showOriginalBody || !canCleanBody) return email.body;
+    return cleanEmailBody(email.body);
+  }, [email, showOriginalBody, canCleanBody]);
+
   useEffect(() => {
     loadEmail();
   }, [id]);
@@ -81,6 +97,8 @@ export default function EmailDetail() {
     setReplyError(null);
     setNoteSaved(false);
     setTasksSavedMsg("");
+    // Default each newly opened email to the cleaned body view.
+    setShowOriginalBody(false);
     // Reset AI priority review state so results never bleed between emails.
     setReview(null);
     setReviewError(null);
@@ -724,8 +742,24 @@ export default function EmailDetail() {
       </aside>
 
       <article className="email-content email-sheet enter-1">
+        {canCleanBody && (
+          <div className="email-body-toolbar">
+            <p className="email-clean-note">
+              Cleaned view hides raw tracking links. Original content is still
+              used for AI actions.
+            </p>
+            <button
+              type="button"
+              className="btn-link-quiet"
+              onClick={() => setShowOriginalBody((v) => !v)}
+              aria-pressed={showOriginalBody}
+            >
+              {showOriginalBody ? "Show cleaned" : "Show original"}
+            </button>
+          </div>
+        )}
         <div className="email-body">
-          <pre className="email-body-text">{email.body}</pre>
+          <pre className="email-body-text">{displayBody}</pre>
         </div>
       </article>
       </div>

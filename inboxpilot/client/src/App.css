@@ -979,6 +979,28 @@
   margin-bottom: 0;
 }
 
+.email-body-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.email-clean-note {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
+.email-body-toolbar .btn-link-quiet {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .email-body-text {
   font-family: inherit;
   font-size: 0.96rem;
