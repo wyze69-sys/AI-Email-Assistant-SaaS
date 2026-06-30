@@ -331,8 +331,9 @@ export default function EmailDetail() {
         </button>
       </header>
 
-      {/* Document header: subject, triage, and metadata read first */}
-      <section className="email-headline email-sheet enter-1">
+      <div className="email-detail-workspace">
+      {/* LEFT: email document — subject, triage, and metadata read first */}
+      <section className="email-detail-main email-document-panel email-sheet enter-1">
         <h2 className="email-detail-subject">
           {email.subject || "(no subject)"}
         </h2>
@@ -356,7 +357,7 @@ export default function EmailDetail() {
           </div>
         )}
 
-        <div className="email-meta">
+        <div className="email-meta email-reading-meta">
           <div className="meta-row">
             <strong>From</strong> <span>{email.from}</span>
           </div>
@@ -381,13 +382,31 @@ export default function EmailDetail() {
         </div>
       </section>
 
-      <div className="email-detail-layout">
-      {/* AI assistant panel — surfaced above the body so the main
-          actions are reachable before the long message content. */}
-      <aside className="ai-panel enter-2" aria-label="AI assistant">
+      {/* RIGHT: compact AI assistant / tools / context panel */}
+      <aside className="email-assistant-panel ai-panel enter-2" aria-label="Email assistant">
+        <div className="email-assistant-header">
+          <h2 className="email-assistant-title">Email assistant</h2>
+          {readingView && intentLabel(readingView.intent) && (
+            <span
+              className={`email-type-chip email-type-${readingView.intent}`}
+              title="Detected email type (display only)"
+            >
+              {intentLabel(readingView.intent)}
+            </span>
+          )}
+        </div>
+        {readingView && readingView.hiddenLinkCount > 0 && (
+          <p className="email-assistant-status">
+            {readingView.hiddenLinkCount} tracking/footer link
+            {readingView.hiddenLinkCount === 1 ? "" : "s"} hidden in the cleaned view.
+          </p>
+        )}
+        <p className="email-assistant-hint">
+          Use AI to understand, extract, or draft from the original email.
+        </p>
         <div className="ai-toolbar">
-          <p className="ai-toolbar-label">Assistant</p>
-          <div className="ai-actions">
+          <p className="ai-toolbar-label">AI actions</p>
+          <div className="ai-actions email-assistant-actions">
             <button
               className="btn-ai"
               onClick={handleSummarize}
@@ -748,7 +767,7 @@ export default function EmailDetail() {
         </div>
       </aside>
 
-      <article className="email-content email-sheet enter-1">
+      <article className="email-content email-reading email-sheet enter-1">
         {canCleanBody && (
           <div className="email-body-toolbar">
             <div className="email-clean-meta">

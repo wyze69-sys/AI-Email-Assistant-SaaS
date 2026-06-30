@@ -856,7 +856,7 @@
 /* Email detail — a readable message sheet + quiet assistant panel     */
 /* ------------------------------------------------------------------ */
 .email-detail {
-  max-width: var(--content-width);
+  max-width: 1280px;
   margin: 0 auto;
   padding: 1.25rem 1.25rem 4rem;
 }
@@ -884,35 +884,43 @@
   color: var(--primary);
 }
 
-/* Full-width document header: subject, triage, and metadata read first */
-.email-headline {
-  margin-bottom: 1.25rem;
+/* Left document panel: subject, triage, and metadata read first */
+.email-document-panel {
+  margin-bottom: 0;
 }
 
-.email-headline .email-meta {
+.email-document-panel .email-meta {
   margin-bottom: 0;
   padding-bottom: 0;
   border-bottom: none;
 }
 
-/* Two columns on wide screens: the message, and the assistant.
-   The assistant comes first in the DOM (so it sits above the body on
-   mobile), but grid placement keeps it on the right on wide screens. */
-.email-detail-layout {
+/* Two-column reading workspace: a wide email document on the LEFT and a
+   compact AI assistant on the RIGHT. Three children share one grid so the
+   assistant can slot between the header and body on mobile.
+     col 1 / row 1  → document header (subject, triage, meta)
+     col 1 / row 2  → email reading body
+     col 2 / rows   → AI assistant (spans, sticky on desktop) */
+.email-detail-workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 35%);
   gap: 1.5rem;
   align-items: start;
 }
 
-.email-detail-layout > .email-content {
+.email-detail-workspace > .email-detail-main {
   grid-column: 1;
   grid-row: 1;
 }
 
-.email-detail-layout > .ai-panel {
+.email-detail-workspace > .email-reading {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.email-detail-workspace > .email-assistant-panel {
   grid-column: 2;
-  grid-row: 1;
+  grid-row: 1 / span 2;
 }
 
 /* The message reads like a sheet of paper */
@@ -1182,6 +1190,59 @@
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+}
+
+/* Compact assistant header: small heading + email-type chip */
+.email-assistant-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.email-assistant-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0;
+}
+
+/* Quiet "Email type" chip — no loud colors, just a soft pill */
+.email-type-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Subtle emphasis for action/security mail, still understated */
+.email-type-chip.email-type-action,
+.email-type-chip.email-type-security {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.email-assistant-status {
+  font-size: 0.74rem;
+  color: var(--text-faint);
+  margin: -0.2rem 0 0;
+}
+
+.email-assistant-hint {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 .ai-toolbar {
@@ -1625,15 +1686,25 @@
 /* Responsive                                                          */
 /* ------------------------------------------------------------------ */
 @media (max-width: 920px) {
-  /* Single column: assistant (DOM-first) sits above the message body */
-  .email-detail-layout {
+  /* Stack to one column. Order: header → AI tools → body, so the
+     assistant stays reachable without scrolling past the whole message. */
+  .email-detail-workspace {
     grid-template-columns: 1fr;
   }
 
-  .email-detail-layout > .email-content,
-  .email-detail-layout > .ai-panel {
-    grid-column: auto;
-    grid-row: auto;
+  .email-detail-workspace > .email-detail-main {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .email-detail-workspace > .email-assistant-panel {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .email-detail-workspace > .email-reading {
+    grid-column: 1;
+    grid-row: 3;
   }
 
   .ai-panel {
