@@ -745,8 +745,8 @@ export default function EmailDetail() {
         {canCleanBody && (
           <div className="email-body-toolbar">
             <p className="email-clean-note">
-              Cleaned view hides raw tracking links. Original content is still
-              used for AI actions.
+              Cleaned view hides tracking links and footer clutter. AI tools
+              still use the original email.
             </p>
             <button
               type="button"

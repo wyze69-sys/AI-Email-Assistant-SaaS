@@ -1,71 +1,162 @@
 // emailDisplay.js
-// Display-only cleanup for plain-text email bodies.
+// Display-only readability cleanup for plain-text email bodies.
 //
 // IMPORTANT: This module never mutates the original email. It returns a
 // cleaned *copy* of the body purely for rendering. AI actions (summarize,
-// extract tasks, suggested reply, priority review) must keep using the
-// original `email.body` / backend-fetched content, never this output.
+// extract tasks, suggested reply, priority review) and "Show original" must
+// keep using the untouched `email.body`, never this output.
 //
-// The cleanup is conservative: it hides standalone tracking/marketing URLs
-// and tidies whitespace, but keeps human-readable text. It does not parse or
-// render HTML — input is treated as plain text only, so no scripts or markup
-// are ever executed.
+// The cleanup is conservative and provider-agnostic: it hides standalone
+// tracking/redirect URLs, browser-view fallback lines, footer clutter
+// (unsubscribe / manage preferences / "you received this email…"), and
+// wrapped URL fragments, while keeping human-readable text, headings and
+// paragraphs. Input is treated strictly as plain text — no HTML is parsed or
+// rendered, so no scripts or markup can ever execute.
 
-// URL matcher used to detect and strip links. Intentionally simple and
-// scoped to http/https so we never touch ordinary words.
-const URL_REGEX = /https?:\/\/[^\s<>"')]+/gi;
+// http/https URL matcher. Scoped to real links so plain words are untouched.
+const URL_REGEX = /https?:\/\/[^\s<>"')\]]+/gi;
 
-// Fragments that strongly indicate a tracking / marketing redirect link.
-// Matched case-insensitively against the full URL.
-const TRACKING_HINTS = [
-  "click.sfmc",
-  "sfmc.edx.org",
+// Query-param / token fragments that signal a tracking or redirect link.
+const NOISY_PARAM_HINTS = [
+  "target=",
+  "redirect=",
+  "redirect_url=",
+  "url=",
+  "u=",
+  "q=",
+  "qs=",
+  "od=",
+  "user_id=",
+  "campaign",
   "utm_",
-  "?qs=",
-  "&qs=",
-  "/trk",
+  "mc_cid",
+  "mc_eid",
+  "sfmc",
+  "click_id",
+  "tracking",
+];
+
+// Encoded-URL fragments that mark a long redirect/wrapped link.
+const ENCODED_HINTS = ["%2f", "%3a", "%3d", "%25", "https%3a"];
+
+// Path / domain fragments common to email tracking platforms.
+const PATH_DOMAIN_HINTS = [
+  "/click",
+  "/email/click",
+  "email/click",
+  "/track",
+  "/tracking",
+  "/redirect",
+  "click.",
+  "track.",
+  "link.",
+  "links.",
   "list-manage.com",
   "mailchi.mp",
   "sendgrid.net",
-  "mandrillapp.com",
-  "doubleclick.net",
-  "/wf/click",
-  "/CL0/",
-  "email.",
-  "links.",
-  "click.",
-  "track.",
+  "sfmc",
+  "click.sfmc",
+  "marketing",
 ];
 
-// A URL is considered "trackingy" if it matches any known hint. Plain links
-// that look like normal destinations are left intact so we don't hide useful
-// human-shared URLs.
-function isTrackingUrl(url) {
-  const lower = url.toLowerCase();
-  return TRACKING_HINTS.some((hint) => lower.includes(hint));
+// Whole-line phrases that are browser-view fallbacks (no real content).
+const BROWSER_FALLBACK_PHRASES = [
+  "view this content, open the following url",
+  "open the following url in your browser",
+  "view this email in your browser",
+  "view in browser",
+  "view online",
+  "open in browser",
+  "having trouble viewing",
+  "can't see this email",
+  "cannot see this email",
+  "trouble viewing this email",
+];
+
+// Strong footer signals — remove the whole line whenever present.
+const FOOTER_PHRASES = [
+  "you received this email because",
+  "this email was sent to",
+  "add us to your address book",
+  "manage preferences",
+  "manage your preferences",
+  "update your preferences",
+  "update preferences",
+  "email preferences",
+  "unsubscribe",
+  "no longer wish to receive",
+  "opt out",
+  "opt-out",
+];
+
+// Weaker footer labels — only drop when the line is essentially just the
+// label plus a link/separator (so real prose mentioning them is kept).
+const WEAK_FOOTER_PHRASES = ["privacy policy", "terms of service", "terms of use"];
+
+function includesAny(haystack, needles) {
+  return needles.some((n) => haystack.includes(n));
 }
 
-// True when, after removing all URLs, a line has no meaningful text left.
-// Such a line was effectively just a link (optionally with bullets/brackets).
-function isUrlOnlyLine(line) {
-  const withoutUrls = line.replace(URL_REGEX, "");
-  // Strip common decoration left around bare links.
-  const residue = withoutUrls.replace(/[\s\-•·*>|()<>\[\]]/g, "");
-  return residue.length === 0;
+/**
+ * Is this URL a tracking / redirect / noisy link?
+ * General heuristics — not tied to any single provider.
+ */
+function isNoisyUrl(url) {
+  const lower = url.toLowerCase();
+  if (url.length > 120) return true;
+  if (includesAny(lower, NOISY_PARAM_HINTS)) return true;
+  if (includesAny(lower, ENCODED_HINTS)) return true;
+  if (includesAny(lower, PATH_DOMAIN_HINTS)) return true;
+  return false;
+}
+
+// All URLs in a string (resets the shared global regex each call).
+function findUrls(str) {
+  URL_REGEX.lastIndex = 0;
+  const matches = str.match(URL_REGEX) || [];
+  URL_REGEX.lastIndex = 0;
+  return matches;
+}
+
+// After removing every URL, is there any meaningful text left on the line?
+function hasTextBesidesUrls(line) {
+  const residue = line.replace(URL_REGEX, "").replace(/[\s\-•·*>|()<>\[\]:]/g, "");
+  URL_REGEX.lastIndex = 0;
+  return residue.length > 0;
+}
+
+// A wrapped fragment of a long URL (continuation noise, encoded chunks, or a
+// long token-like string with no real words).
+function looksLikeUrlFragment(line) {
+  const t = line.trim();
+  if (!t) return false;
+  // Continuation of a wrapped URL from the previous line.
+  if (/^[?&=/]/.test(t) && !/\s/.test(t)) return true;
+  // Several percent-encoded sequences.
+  if ((t.match(/%[0-9a-fA-F]{2}/g) || []).length >= 3) return true;
+  // Long, unbroken token with no spaces.
+  if (t.length > 60 && !/\s/.test(t)) return true;
+  // Long line that contains almost no real words.
+  if (t.length > 60) {
+    const words = t.match(/[A-Za-z]{3,}/g) || [];
+    if (words.length <= 1) return true;
+  }
+  return false;
+}
+
+// Trailing label punctuation left after stripping a URL ("Help Centre:" → "Help Centre").
+function trimLabel(line) {
+  return line.replace(/[\s:>\-–—|•·]+$/g, "").replace(/^[\s>|•·]+/g, "");
+}
+
+// Count of human-meaningful characters (used for the empty-result fallback).
+function meaningfulLength(str) {
+  return (str.match(/[A-Za-z0-9]/g) || []).length;
 }
 
 /**
  * Produce a display-friendly version of a plain-text email body.
- *
- * Rules:
- *  - Standalone URL-only lines are dropped. If the URL looks like tracking,
- *    a small "[link hidden]" placeholder is left so the layout reads cleanly;
- *    otherwise the whole empty line is removed.
- *  - Lines with human text + a tracking URL keep the text; the tracking URL
- *    is removed. Non-tracking URLs inside text lines are preserved.
- *  - Repeated blank lines are collapsed to a single blank line.
- *  - Trailing whitespace on each line is trimmed; leading/trailing blank
- *    lines are removed.
+ * Returns the original body unchanged if cleaning would leave too little.
  *
  * @param {string} body raw plain-text email body
  * @returns {string} cleaned text for display only
@@ -78,35 +169,57 @@ export function cleanEmailBody(body) {
 
   for (const rawLine of lines) {
     let line = rawLine.replace(/[ \t]+$/g, ""); // trim trailing whitespace
+    const lower = line.toLowerCase();
+    const trimmed = line.trim();
 
-    if (isUrlOnlyLine(line) && URL_REGEX.test(line)) {
-      // Reset lastIndex because URL_REGEX is global and stateful.
-      URL_REGEX.lastIndex = 0;
-      const urls = line.match(URL_REGEX) || [];
-      const allTracking = urls.length > 0 && urls.every(isTrackingUrl);
-      if (allTracking) {
-        out.push("[link hidden]");
-      }
-      // Non-tracking URL-only lines (and the tracking case above) collapse
-      // the rest of the original line away.
-      URL_REGEX.lastIndex = 0;
+    if (trimmed === "") {
+      out.push("");
       continue;
     }
-    URL_REGEX.lastIndex = 0;
 
-    // Mixed line: keep human text, strip only tracking URLs inline.
-    line = line.replace(URL_REGEX, (match) =>
-      isTrackingUrl(match) ? "" : match
-    );
-    URL_REGEX.lastIndex = 0;
+    // (a) Browser-view fallback lines — drop entirely.
+    if (includesAny(lower, BROWSER_FALLBACK_PHRASES)) continue;
 
-    // Tidy any double spaces left where a URL was removed.
-    line = line.replace(/[ \t]{2,}/g, " ").replace(/[ \t]+$/g, "");
+    // (b) Strong footer lines — drop entirely.
+    if (includesAny(lower, FOOTER_PHRASES)) continue;
+
+    // (c) Weak footer labels — drop only if the line is short / link-like.
+    if (
+      includesAny(lower, WEAK_FOOTER_PHRASES) &&
+      (findUrls(line).length > 0 || trimmed.length < 40)
+    ) {
+      continue;
+    }
+
+    // (d) Wrapped URL fragments / token noise — drop entirely.
+    if (looksLikeUrlFragment(line)) continue;
+
+    const urls = findUrls(line);
+
+    if (urls.length > 0) {
+      const urlOnly = !hasTextBesidesUrls(line);
+
+      if (urlOnly) {
+        // URL-only line: keep only short, clearly non-noisy links; otherwise drop.
+        const keep = urls.length === 1 && !isNoisyUrl(urls[0]);
+        if (keep) out.push(trimmed);
+        continue;
+      }
+
+      // Mixed line: strip noisy URLs, keep readable text and any clean URLs.
+      line = line.replace(URL_REGEX, (m) => (isNoisyUrl(m) ? "" : m));
+      URL_REGEX.lastIndex = 0;
+      line = line.replace(/[ \t]{2,}/g, " ").replace(/[ \t]+$/g, "");
+      const labelled = trimLabel(line);
+      if (labelled.trim() === "") continue; // nothing useful remained
+      out.push(labelled);
+      continue;
+    }
 
     out.push(line);
   }
 
-  // Collapse 2+ consecutive blank lines into one, and trim edges.
+  // Collapse 2+ consecutive blank lines into one, then trim edges.
   const collapsed = [];
   let blankRun = 0;
   for (const line of out) {
@@ -123,13 +236,18 @@ export function cleanEmailBody(body) {
   while (collapsed.length && collapsed[collapsed.length - 1].trim() === "")
     collapsed.pop();
 
-  return collapsed.join("\n");
+  const cleaned = collapsed.join("\n");
+
+  // Empty-result fallback: if cleaning stripped almost everything, the body
+  // was probably mostly links/markup — show the original rather than a blank.
+  if (meaningfulLength(cleaned) < 20) return body;
+
+  return cleaned;
 }
 
 /**
- * Heuristic: does this body actually benefit from cleaning?
- * Used so we don't show the toggle / "cleaned" messaging for already-tidy
- * emails, and so cleaned output never silently differs by a trivial amount.
+ * Heuristic: does this body actually benefit from cleaning? Used so the
+ * toggle / "cleaned" messaging only appear when there's a real difference.
  *
  * @param {string} body raw plain-text email body
  * @returns {boolean}
@@ -137,6 +255,8 @@ export function cleanEmailBody(body) {
 export function bodyNeedsCleanup(body) {
   if (typeof body !== "string" || body.length === 0) return false;
   const cleaned = cleanEmailBody(body);
-  // Only worth offering if cleaning meaningfully changed the text.
-  return cleaned !== body.replace(/\r\n/g, "\n").replace(/[ \t]+$/gm, "");
+  const normalizedOriginal = body
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+$/gm, "");
+  return cleaned !== normalizedOriginal;
 }
