@@ -95,12 +95,17 @@ export default function Dashboard() {
       if (pageToken) params.pageToken = pageToken;
 
       const data = await fetchEmails(params);
+      // Defensive: API may return a missing/non-array `messages` (e.g. error
+      // shape or empty body). Normalize so state stays a valid array and the
+      // triage/render loops never crash.
+      const messages = Array.isArray(data?.messages) ? data.messages : [];
+      const next = data?.nextPageToken || null;
       if (isMore) {
-        setEmails((prev) => [...prev, ...data.messages]);
+        setEmails((prev) => [...prev, ...messages]);
       } else {
-        setEmails(data.messages);
+        setEmails(messages);
       }
-      setNextPageToken(data.nextPageToken);
+      setNextPageToken(next);
     } catch (err) {
       setError(friendlyError(err, "We couldn't load your emails. Please try again."));
     } finally {

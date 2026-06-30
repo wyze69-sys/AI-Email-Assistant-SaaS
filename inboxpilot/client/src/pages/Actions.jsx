@@ -182,13 +182,15 @@ export default function Actions() {
               </div>
 
               <div className="action-item-actions">
-                <button
-                  type="button"
-                  className="btn-secondary action-primary-btn"
-                  onClick={() => navigate(item.primary.route)}
-                >
-                  {item.primary.label}
-                </button>
+                {item.primary && item.primary.route && item.primary.label && (
+                  <button
+                    type="button"
+                    className="btn-secondary action-primary-btn"
+                    onClick={() => navigate(item.primary.route)}
+                  >
+                    {item.primary.label}
+                  </button>
+                )}
                 {item.canMarkDone && (
                   <button
                     type="button"

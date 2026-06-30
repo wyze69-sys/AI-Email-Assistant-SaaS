@@ -199,60 +199,79 @@ function emailReason(labels) {
  * @param {number} [limit]            max items returned (default 20)
  * @returns {Array} sorted action items
  */
-export function buildActionQueue(
-  { emails = [], tasks = [], captures = [] } = {},
-  limit = ACTION_QUEUE_LIMIT
-) {
+export function buildActionQueue(sources, limit = ACTION_QUEUE_LIMIT) {
+  // Null-safe entry: accept undefined / null / non-object without throwing.
+  // (A default param only guards `undefined`, so an explicit `null` — e.g. a
+  // failed fetch handed straight in — would otherwise crash on destructuring.)
+  const safe = sources && typeof sources === "object" ? sources : {};
+  const emails = Array.isArray(safe.emails) ? safe.emails : [];
+  const tasks = Array.isArray(safe.tasks) ? safe.tasks : [];
+  const captures = Array.isArray(safe.captures) ? safe.captures : [];
+
   const items = [];
   const today = startOfToday().getTime();
 
   // --- Tasks: due/overdue (now) and upcoming deadlines (next 7 days) --------
-  for (const task of Array.isArray(tasks) ? tasks : []) {
-    if (!task || task.status === "done") continue;
-    const due = parseDeadline(task.deadline);
-    if (due === null) continue;
-    const dueTs = due.getTime();
-    const diffDays = Math.round((dueTs - today) / MS_PER_DAY);
+  // Each iteration is isolated so one malformed/legacy task can never abort
+  // the whole queue — bad items are skipped, not fatal.
+  for (const task of tasks) {
+    try {
+      if (!task || task.status === "done") continue;
+      const due = parseDeadline(task.deadline);
+      if (due === null) continue;
+      const dueTs = due.getTime();
+      const diffDays = Math.round((dueTs - today) / MS_PER_DAY);
 
-    if (dueTs < today) {
-      items.push(buildTaskItem(task, "overdue", URGENCY.OVERDUE_TASK));
-    } else if (dueTs === today) {
-      items.push(buildTaskItem(task, "today", URGENCY.DUE_TODAY_TASK));
-    } else if (diffDays <= 7) {
-      items.push(buildDeadlineItem(task, URGENCY.UPCOMING_DEADLINE));
+      if (dueTs < today) {
+        items.push(buildTaskItem(task, "overdue", URGENCY.OVERDUE_TASK));
+      } else if (dueTs === today) {
+        items.push(buildTaskItem(task, "today", URGENCY.DUE_TODAY_TASK));
+      } else if (diffDays <= 7) {
+        items.push(buildDeadlineItem(task, URGENCY.UPCOMING_DEADLINE));
+      }
+      // Tasks dated beyond 7 days are not surfaced as urgent.
+    } catch {
+      // Skip a single bad task rather than crashing the page.
     }
-    // Tasks dated beyond 7 days are not surfaced as urgent.
   }
 
   // --- Emails: classified with the existing triage helper -------------------
-  for (const email of Array.isArray(emails) ? emails : []) {
-    if (!email || !email.id) continue;
-    const { labels = [] } = triageEmail(email);
-    const match = emailReason(labels);
-    if (!match) continue;
-    items.push(buildEmailItem(email, match.reason, match.urgency));
+  for (const email of emails) {
+    try {
+      if (!email || !email.id) continue;
+      const { labels = [] } = triageEmail(email);
+      const match = emailReason(Array.isArray(labels) ? labels : []);
+      if (!match) continue;
+      items.push(buildEmailItem(email, match.reason, match.urgency));
+    } catch {
+      // Skip a single bad email rather than crashing the page.
+    }
   }
 
   // --- Captures: not yet converted ------------------------------------------
-  for (const capture of Array.isArray(captures) ? captures : []) {
-    if (!capture || capture.convertedTo) continue;
-    const text = (capture.text || "").trim();
-    if (!text) continue;
-    items.push({
-      id: `capture-${capture.id}`,
-      kind: "capture",
-      filter: "captures",
-      typeLabel: "Capture",
-      title: text,
-      reason: "Not converted yet",
-      date: formatShortDate(capture.createdAt),
-      urgency: URGENCY.OPEN_CAPTURE,
-      isOverdue: false,
-      primary: { label: "Open capture", route: "/capture" },
-      canMarkDone: false,
-      canStartFocus: false,
-      tieBreak: -(capture.createdAt || 0), // newest capture first
-    });
+  for (const capture of captures) {
+    try {
+      if (!capture || capture.convertedTo) continue;
+      const text = (capture.text || "").trim();
+      if (!text) continue;
+      items.push({
+        id: `capture-${capture.id}`,
+        kind: "capture",
+        filter: "captures",
+        typeLabel: "Capture",
+        title: text,
+        reason: "Not converted yet",
+        date: formatShortDate(capture.createdAt),
+        urgency: URGENCY.OPEN_CAPTURE,
+        isOverdue: false,
+        primary: { label: "Open capture", route: "/capture" },
+        canMarkDone: false,
+        canStartFocus: false,
+        tieBreak: -(capture.createdAt || 0), // newest capture first
+      });
+    } catch {
+      // Skip a single bad capture rather than crashing the page.
+    }
   }
 
   // Sort by urgency band, then the per-item tie-break.
@@ -261,8 +280,15 @@ export function buildActionQueue(
     return a.tieBreak - b.tieBreak;
   });
 
+  // Never surface an item without a usable primary action. The list renders
+  // `item.primary.route` / `item.primary.label` directly, so a missing primary
+  // would crash the whole page — drop those items instead.
+  const usable = items.filter(
+    (it) => it && it.primary && it.primary.route && it.primary.label
+  );
+
   const max = Number.isFinite(limit) && limit > 0 ? limit : ACTION_QUEUE_LIMIT;
-  return items.slice(0, max);
+  return usable.slice(0, max);
 }
 
 /**
@@ -272,6 +298,7 @@ export function buildActionQueue(
 export function countByFilter(items) {
   const counts = { all: 0, inbox: 0, tasks: 0, captures: 0, deadlines: 0 };
   for (const item of Array.isArray(items) ? items : []) {
+    if (!item || typeof item !== "object") continue; // skip malformed entries
     counts.all += 1;
     if (counts[item.filter] != null) counts[item.filter] += 1;
   }
