@@ -12,12 +12,13 @@ import {
 } from "../services/store.js";
 
 /**
- * Quick Capture (frontend-only).
+ * Action Inbox (frontend-only).
  *
- * A fast scratch space for ideas, reminders, links, and notes. Each item is
- * saved locally under "inboxpilot:capture:v1" via the guarded store helpers —
- * no backend calls, no email sending. Items can later be converted into a
- * task, note, or resource using the existing local stores.
+ * A fast capture space for messages, links, notes, and reminders before they
+ * get lost. Each item is saved locally under "inboxpilot:capture:v1" via the
+ * guarded store helpers — no backend calls, no email sending. Items can later
+ * be turned into a dated task/deadline, a plain task, a note, or a resource
+ * using the existing local stores.
  */
 
 const TYPES = ["idea", "reminder", "task", "note", "link", "general"];
@@ -77,6 +78,14 @@ export default function Capture() {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
 
+  // Inline "Create deadline" form state. `deadlineFor` holds the capture id
+  // whose form is open (or null when closed). Fields are local to that form.
+  const [deadlineFor, setDeadlineFor] = useState(null);
+  const [dlText, setDlText] = useState("");
+  const [dlDate, setDlDate] = useState("");
+  const [dlPriority, setDlPriority] = useState("none");
+  const [dlError, setDlError] = useState("");
+
   useEffect(() => {
     refresh();
   }, []);
@@ -128,6 +137,61 @@ export default function Capture() {
     updateCapture(capture.id, { convertedTo: "task" });
     refresh();
     announce("ok", "Added to Tasks.");
+  }
+
+  // Open the inline "Create deadline" form for a capture, prefilling the
+  // task text from the capture and resetting the date/priority fields.
+  function openDeadlineForm(capture) {
+    setDeadlineFor(capture.id);
+    setDlText(capture.text || "");
+    setDlDate("");
+    setDlPriority("none");
+    setDlError("");
+  }
+
+  function closeDeadlineForm() {
+    setDeadlineFor(null);
+    setDlText("");
+    setDlDate("");
+    setDlPriority("none");
+    setDlError("");
+  }
+
+  // Create a dated task (deadline) from a capture. Requires task text and a
+  // date. Marks the capture converted only after a successful save, and never
+  // duplicates an already-converted item.
+  function handleSaveDeadline(capture) {
+    if (capture.convertedTo === "task") {
+      setDlError("");
+      closeDeadlineForm();
+      announce("ok", "This was already converted to a task.");
+      return;
+    }
+    const taskText = dlText.trim();
+    if (!taskText) {
+      setDlError("Add the task text before saving.");
+      return;
+    }
+    if (!dlDate) {
+      setDlError("Pick a deadline date before saving.");
+      return;
+    }
+    const priority = dlPriority === "none" ? null : dlPriority;
+    const created = addTask({
+      text: taskText,
+      status: "todo",
+      priority,
+      deadline: dlDate,
+      source: { type: "capture", id: capture.id },
+    });
+    if (!created) {
+      setDlError("We couldn't create that deadline. Local storage may be unavailable.");
+      return;
+    }
+    updateCapture(capture.id, { convertedTo: "task" });
+    closeDeadlineForm();
+    refresh();
+    announce("ok", "Added to Tasks and Deadlines.");
   }
 
   function handleConvertToNote(capture) {
@@ -220,8 +284,8 @@ export default function Capture() {
 
   return (
     <WorkspaceShell
-      title="Quick capture"
-      subtitle="Jot an idea, reminder, link, or note, then turn it into a task, note, or resource."
+      title="Action Inbox"
+      subtitle="Capture messages, links, notes, and reminders before they get lost. Turn them into tasks, notes, resources, and deadlines."
     >
       <div className="capture-page">
         <form className="capture-box" onSubmit={handleAdd}>
@@ -232,7 +296,7 @@ export default function Capture() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={3}
-              placeholder="Capture an idea, reminder, link, or note..."
+              placeholder="Paste a message, meeting note, link, reminder, or idea..."
               aria-label="Capture text"
             />
           </label>
@@ -382,9 +446,83 @@ export default function Capture() {
                   <span className="capture-card-date">
                     Captured {formatDate(capture.createdAt)}
                   </span>
+
+                  {deadlineFor === capture.id && (
+                    <div className="capture-deadline-form">
+                      <label className="capture-deadline-field">
+                        <span className="capture-deadline-label">Task</span>
+                        <textarea
+                          className="capture-input"
+                          rows={2}
+                          value={dlText}
+                          onChange={(e) => setDlText(e.target.value)}
+                          placeholder="What needs to be done?"
+                          aria-label="Task text"
+                        />
+                      </label>
+
+                      <div className="capture-deadline-row">
+                        <label className="capture-deadline-field">
+                          <span className="capture-deadline-label">Deadline</span>
+                          <input
+                            type="date"
+                            value={dlDate}
+                            onChange={(e) => setDlDate(e.target.value)}
+                            aria-label="Deadline date"
+                          />
+                        </label>
+
+                        <label className="capture-deadline-field">
+                          <span className="capture-deadline-label">Priority</span>
+                          <select
+                            value={dlPriority}
+                            onChange={(e) => setDlPriority(e.target.value)}
+                            aria-label="Priority"
+                          >
+                            <option value="none">None</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      {dlError && (
+                        <p className="capture-form-error" role="alert">
+                          {dlError}
+                        </p>
+                      )}
+
+                      <div className="capture-deadline-actions">
+                        <button
+                          className="btn-primary btn-sm"
+                          onClick={() => handleSaveDeadline(capture)}
+                        >
+                          Save deadline
+                        </button>
+                        <button
+                          className="btn-chip btn-chip-quiet"
+                          onClick={closeDeadlineForm}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="capture-card-tools">
+                  <button
+                    className="btn-chip"
+                    onClick={() =>
+                      deadlineFor === capture.id
+                        ? closeDeadlineForm()
+                        : openDeadlineForm(capture)
+                    }
+                    disabled={capture.convertedTo === "task"}
+                  >
+                    Create deadline
+                  </button>
                   <button
                     className="btn-chip"
                     onClick={() => handleConvertToTask(capture)}

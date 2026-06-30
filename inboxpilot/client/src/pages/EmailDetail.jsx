@@ -306,8 +306,8 @@ export default function EmailDetail() {
         </button>
       </header>
 
-      <div className="email-detail-layout">
-      <article className="email-content email-sheet enter-1">
+      {/* Document header: subject, triage, and metadata read first */}
+      <section className="email-headline email-sheet enter-1">
         <h2 className="email-detail-subject">
           {email.subject || "(no subject)"}
         </h2>
@@ -354,13 +354,11 @@ export default function EmailDetail() {
             </div>
           )}
         </div>
+      </section>
 
-        <div className="email-body">
-          <pre className="email-body-text">{email.body}</pre>
-        </div>
-      </article>
-
-      {/* AI assistant panel — a quiet side utility */}
+      <div className="email-detail-layout">
+      {/* AI assistant panel — surfaced above the body so the main
+          actions are reachable before the long message content. */}
       <aside className="ai-panel enter-2" aria-label="AI assistant">
         <div className="ai-toolbar">
           <p className="ai-toolbar-label">Assistant</p>
@@ -724,6 +722,12 @@ export default function EmailDetail() {
           </p>
         </div>
       </aside>
+
+      <article className="email-content email-sheet enter-1">
+        <div className="email-body">
+          <pre className="email-body-text">{email.body}</pre>
+        </div>
+      </article>
       </div>
     </div>
   );

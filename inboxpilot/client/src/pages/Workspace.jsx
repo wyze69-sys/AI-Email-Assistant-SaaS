@@ -360,7 +360,7 @@ export default function Workspace() {
               )}
               <div className="ws-panel-actions">
                 <button className="btn-chip" onClick={() => navigate("/capture")}>
-                  Open Quick Capture
+                  Open Action Inbox
                 </button>
               </div>
             </section>

@@ -884,12 +884,35 @@
   color: var(--primary);
 }
 
-/* Two columns on wide screens: the message, and the assistant */
+/* Full-width document header: subject, triage, and metadata read first */
+.email-headline {
+  margin-bottom: 1.25rem;
+}
+
+.email-headline .email-meta {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+/* Two columns on wide screens: the message, and the assistant.
+   The assistant comes first in the DOM (so it sits above the body on
+   mobile), but grid placement keeps it on the right on wide screens. */
 .email-detail-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 1.5rem;
   align-items: start;
+}
+
+.email-detail-layout > .email-content {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.email-detail-layout > .ai-panel {
+  grid-column: 2;
+  grid-row: 1;
 }
 
 /* The message reads like a sheet of paper */
@@ -1417,9 +1440,15 @@
 /* Responsive                                                          */
 /* ------------------------------------------------------------------ */
 @media (max-width: 920px) {
-  /* Assistant moves below the message */
+  /* Single column: assistant (DOM-first) sits above the message body */
   .email-detail-layout {
     grid-template-columns: 1fr;
+  }
+
+  .email-detail-layout > .email-content,
+  .email-detail-layout > .ai-panel {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .ai-panel {
@@ -3585,6 +3614,65 @@
 .capture-card-tools .btn-chip:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Inline "Create deadline" form within a capture card */
+.capture-deadline-form {
+  margin-top: 0.85rem;
+  padding: 0.85rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.capture-deadline-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.capture-deadline-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+.capture-deadline-field input,
+.capture-deadline-field select,
+.capture-deadline-field textarea {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.capture-deadline-row {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.capture-deadline-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-sm {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
 }
 
 @media (max-width: 560px) {
