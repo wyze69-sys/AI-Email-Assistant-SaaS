@@ -18,16 +18,23 @@ const port = process.env.PORT || 5000;
 const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
 
 // CORS: allow CLIENT_URL. Supports comma-separated origins for multiple testers.
-const allowedOrigins = clientUrl.split(",").map((s) => s.trim());
+const allowedOrigins = clientUrl
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (curl, Render health checks)
+      // Allow requests with no origin (curl, Render health checks, same-origin)
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error("Not allowed by CORS"));
+      // Reject without throwing a stack-trace 500: deny CORS cleanly.
+      const err = new Error("Not allowed by CORS");
+      err.status = 403;
+      return callback(err);
     },
     credentials: true,
   })
@@ -52,6 +59,16 @@ app.get("/api/health", (req, res) => {
     status: "ok",
     service: "inboxpilot-server",
   });
+});
+
+// Centralized error handler — returns clean JSON, never leaks stack traces.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  if (err && err.message === "Not allowed by CORS") {
+    return res.status(403).json({ error: "Origin not allowed" });
+  }
+  console.error("Unhandled error:", err && err.message);
+  res.status(err.status || 500).json({ error: "Something went wrong" });
 });
 
 async function startServer() {

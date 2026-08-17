@@ -6,9 +6,9 @@ The safety boundary is important: InboxPilot does not automatically send emails.
 
 ## Tech Stack
 
-- Frontend: React.js with Tailwind CSS
+- Frontend: React.js (Vite) with plain CSS
 - Backend: Node.js with Express.js
-- Database: MongoDB
+- Database: MongoDB (Mongoose)
 - Authentication: JWT and Google OAuth 2.0
 - Email API: Gmail API with read-only access
 - AI API: Gemini API
@@ -38,20 +38,30 @@ The safety boundary is important: InboxPilot does not automatically send emails.
 └── InboxPilot_University_Project_Document_Improved.md
 ```
 
-## Core MVP Features
+## Features
 
-- User registration, login, logout, and profile view
-- JWT-protected app routes
-- Google OAuth Gmail connection
-- Gmail read-only recent email listing
+### Implemented
+
+- Google OAuth sign-in (no separate email/password registration)
+- JWT-protected app routes with automatic redirect to login on expiry
+- Gmail connection via Google OAuth (read-only scope)
+- Gmail recent email listing with search and pagination
 - Email detail view
-- AI email summarization
+- AI email summarization (summary, key points, tone)
 - AI task, deadline, and priority extraction
-- AI suggested reply generation with user-selected tone
-- Task management
-- AI suggested reply management
-- Dashboard summary cards
-- Settings page for Gmail connection status
+- AI suggested reply generation (review-only; copy and regenerate, never auto-sent)
+- Profile display (name/avatar) and Gmail connection status on the dashboard
+
+### Planned / not yet implemented
+
+These appear in the project specification but are not part of the current build:
+
+- Email/password registration
+- Persisting tasks and suggested replies to the database (currently shown in the
+  UI only and not saved)
+- User-selected reply tone
+- Dedicated dashboard summary cards
+- A separate settings page (Gmail status currently lives on the dashboard)
 
 ## Getting Started
 

@@ -1,11 +1,26 @@
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 
-const ENCRYPTION_KEY = process.env.TOKEN_ENCRYPTION_KEY || process.env.JWT_SECRET;
+// Gmail OAuth tokens are encrypted at rest with AES-256-CBC.
+// The key comes from TOKEN_ENCRYPTION_KEY, falling back to JWT_SECRET for
+// backward compatibility with tokens already stored using that fallback.
+// NOTE: changing the key (or the key-derivation below) makes existing
+// encrypted tokens unreadable, so the format is intentionally preserved.
+function getEncryptionKey() {
+  const secret = process.env.TOKEN_ENCRYPTION_KEY || process.env.JWT_SECRET;
+  if (!secret) {
+    // Fail clearly instead of crashing with an opaque crypto error, and
+    // without ever logging the (missing) secret value itself.
+    throw new Error(
+      "TOKEN_ENCRYPTION_KEY (or JWT_SECRET as fallback) must be set to encrypt Gmail tokens."
+    );
+  }
+  return crypto.scryptSync(secret, "salt", 32);
+}
 
 function encrypt(text) {
   if (!text) return null;
-  const key = crypto.scryptSync(ENCRYPTION_KEY, "salt", 32);
+  const key = getEncryptionKey();
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
   let encrypted = cipher.update(text, "utf8", "hex");
@@ -15,7 +30,7 @@ function encrypt(text) {
 
 function decrypt(encryptedText) {
   if (!encryptedText) return null;
-  const key = crypto.scryptSync(ENCRYPTION_KEY, "salt", 32);
+  const key = getEncryptionKey();
   const [ivHex, encrypted] = encryptedText.split(":");
   const iv = Buffer.from(ivHex, "hex");
   const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);
